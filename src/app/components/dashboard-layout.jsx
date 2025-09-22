@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import {
     Search, MapPin, Clock, Users, Briefcase, TrendingUp,
-    Star, ChevronRight, Share2, Building, ArrowRight, Zap, AlertCircle
+    Star, ChevronRight, Building, ArrowRight, Zap, AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 
@@ -21,10 +21,10 @@ const JobSeekersLanding = () => {
         const fetchJobs = async () => {
             setLoading(true);
             setError(null);
-            
+
             try {
                 const res = await fetch("http://localhost:4441/api/job/");
-                
+
                 if (!res.ok) {
                     if (res.status === 404) {
                         setError({
@@ -47,12 +47,12 @@ const JobSeekersLanding = () => {
                     }
                     return;
                 }
-                
+
                 const data = await res.json();
                 setJobs(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Error fetching jobs:", error);
-                
+
                 if (error.name === 'TypeError' && error.message.includes('fetch')) {
                     setError({
                         type: 'network_error',
@@ -71,30 +71,56 @@ const JobSeekersLanding = () => {
                 setIsLoaded(true);
             }
         };
-        
+
         fetchJobs();
     }, []);
 
-    // Categories dynamically from API data using jobType
+    const getJobTypeCategory = (jobType) => {
+        if (!jobType) return 'other';
+        const type = jobType.toLowerCase().trim();
+
+        // Map API jobType values to our category IDs
+        if (type.includes('engineer') || type.includes('developer') || type.includes('software') || type.includes('tech')) {
+            return 'engineering';
+        }
+        if (type.includes('design') || type.includes('ui') || type.includes('ux')) {
+            return 'design';
+        }
+        if (type.includes('market') || type.includes('sales') || type.includes('business')) {
+            return 'marketing';
+        }
+        if (type.includes('data') || type.includes('analyst') || type.includes('science')) {
+            return 'data';
+        }
+        if (type.includes('product') || type.includes('management') || type.includes('manager')) {
+            return 'product';
+        }
+        return 'other';
+    };
+
     const categories = [
         { id: "all", name: "All Jobs", count: jobs.length, icon: Briefcase },
-        { id: "engineering", name: "Engineering", count: jobs.filter((j) => j.jobType === "engineering").length, icon: Zap },
-        { id: "design", name: "Design", count: jobs.filter((j) => j.jobType === "design").length, icon: Star },
-        { id: "marketing", name: "Marketing", count: jobs.filter((j) => j.jobType === "marketing").length, icon: TrendingUp },
-        { id: "data", name: "Data", count: jobs.filter((j) => j.jobType === "data").length, icon: Users },
-        { id: "product", name: "Product", count: jobs.filter((j) => j.jobType === "product").length, icon: Building },
+        { id: "engineering", name: "Engineering", count: jobs.filter((j) => getJobTypeCategory(j.jobType) === "engineering").length, icon: Zap },
+        { id: "design", name: "Design", count: jobs.filter((j) => getJobTypeCategory(j.jobType) === "design").length, icon: Star },
+        { id: "marketing", name: "Marketing", count: jobs.filter((j) => getJobTypeCategory(j.jobType) === "marketing").length, icon: TrendingUp },
+        { id: "data", name: "Data", count: jobs.filter((j) => getJobTypeCategory(j.jobType) === "data").length, icon: Users },
+        { id: "product", name: "Product", count: jobs.filter((j) => getJobTypeCategory(j.jobType) === "product").length, icon: Building },
+        { id: "other", name: "Other", count: jobs.filter((j) => getJobTypeCategory(j.jobType) === "other").length, icon: AlertCircle },
     ];
+
+    
 
     const filteredJobs = jobs.filter((job) => {
         const matchesSearch = job.title?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
-        const matchesCategory = selectedCategory === "all" || job.jobType === selectedCategory;
-        const matchesLocation = selectedLocation === "all" || 
+
+        const matchesCategory = selectedCategory === "all" || getJobTypeCategory(job.jobType) === selectedCategory;
+
+        const matchesLocation = selectedLocation === "all" ||
             (selectedLocation === "remote" && job.remote) ||
             job.location?.toLowerCase().includes(selectedLocation.replace("-", " "));
 
         return matchesSearch && matchesCategory && matchesLocation;
     });
-
     const featuredJobs = jobs.filter((job) => job.featured);
 
     // Loading state - keep full page layout
@@ -115,8 +141,10 @@ const JobSeekersLanding = () => {
                                 </div>
                             </div>
                             <div className="flex items-center space-x-3">
-                                <button className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105">
-                                    Get Started
+                                <button
+                                    onClick={() => window.href = 'auth/login'}
+                                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                    Login
                                 </button>
                             </div>
                         </div>
@@ -174,8 +202,10 @@ const JobSeekersLanding = () => {
                         </div>
 
                         <div className="flex items-center space-x-3">
-                            <button className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105">
-                                Get Started
+                            <button
+                                onClick={() => { window.location.href = 'auth/login';}}
+                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105">
+                                Login
                             </button>
                         </div>
                     </div>
@@ -317,7 +347,7 @@ const JobSeekersLanding = () => {
                                 <h3 className="text-2xl font-bold text-[#1c398e] mb-4">{error.title}</h3>
                                 <p className="text-blue-600 mb-8 leading-relaxed">{error.message}</p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                    <button 
+                                    <button
                                         onClick={() => window.location.reload()}
                                         className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
                                     >

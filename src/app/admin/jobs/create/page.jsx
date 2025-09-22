@@ -11,7 +11,7 @@ const Page = () => {
         title: '',
         description: '',
         location: '',
-        jobType: '',
+        jobType: 'Engineering',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -98,7 +98,7 @@ const Page = () => {
                     <p className="text-blue-600 mb-6">Your job posting is now live and accepting applications.</p>
                     <div className="flex items-center justify-center">
                         <Loader2 className="w-6 h-6 text-[#1c398e] animate-spin mr-2" />
-                        <span className="text-[#1c398e]">Redirecting to job dashboard...</span>
+                        <span className="text-[#1c398e]">Redirecting to Admin dashboard...</span>
                     </div>
                 </div>
             </div>
@@ -147,7 +147,7 @@ const Page = () => {
                                 value={formData.title}
                                 onChange={handleInputChange}
                                 required
-                                className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300"
+                                className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300 text-[#1c398e]"
                                 placeholder="e.g. Senior Frontend Developer"
                             />
                         </div>
@@ -163,8 +163,8 @@ const Page = () => {
                                     value={formData.location}
                                     onChange={handleInputChange}
                                     required
-                                    className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300"
-                                    placeholder="e.g. San Francisco, CA or Remote"
+                                    className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300 text-[#1c398e]"
+                                    placeholder="e.g. india, Remote, etc."
                                 />
                             </div>
 
@@ -177,7 +177,7 @@ const Page = () => {
                                     value={formData.jobType}
                                     onChange={handleInputChange}
                                     required
-                                    className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300"
+                                    className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300 text-[#1c398e]"
                                 >
                                     <option value="Engineering">Engineering</option>
                                     <option value="Design">Design</option>
@@ -199,7 +199,7 @@ const Page = () => {
                                 onChange={handleInputChange}
                                 required
                                 rows={10}
-                                className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300 resize-none"
+                                className="w-full px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300 resize-none text-[#1c398e]"
                                 placeholder="Describe the job role, responsibilities, requirements, benefits, etc..."
                             />
                             <p className="text-xs text-gray-500 mt-1">
