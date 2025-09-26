@@ -111,19 +111,10 @@ export const ApplyForJob = async (req, res) => {
 };
 
 
-2.You have to add user role in token eg.
-// Create JWT token with user data
-    const tokenPayload = {
-      userId: user._id,
-      email: user.email,
-      role: user.role,
-      name: user.name
-    };
-and send the user role also in response
 
 
+2.// Middleware to verify JWT token
 
-3.// Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
@@ -150,7 +141,8 @@ const authenticateToken = (req, res, next) => {
 
 
 
-4. GET /verify - Verify token and get user data
+3. GET /verify - Verify token and get user data
+
 router.get('/verify', authenticateToken, async (req, res) => {
   try {
     // Get fresh user data from database
@@ -172,50 +164,11 @@ router.get('/verify', authenticateToken, async (req, res) => {
         name: user.name,
         role: user.role,
         createdAt: user.createdAt,
-        // Add any other user fields you need
-        profilePicture: user.profilePicture,
-        isActive: user.isActive
       }
     });
 
   } catch (error) {
     console.error('Token verification error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
-    });
-  }
-});
-
-
-
-5.// GET /auth/profile - Get user profile (requires authentication)
-router.get('/profile', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
-    }
-
-    res.json({
-      success: true,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        createdAt: user.createdAt,
-        profilePicture: user.profilePicture,
-        isActive: user.isActive
-      }
-    });
-
-  } catch (error) {
-    console.error('Get profile error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Internal server error' 
