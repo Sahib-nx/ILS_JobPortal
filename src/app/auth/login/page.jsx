@@ -15,6 +15,12 @@ const LoginPage = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    if (localStorage.getItem('authToken')) {
+      window.location.href = '/';
+    }
+  }, []);
+
+  useEffect(() => {
     setIsLoaded(true);
   }, []);
 
@@ -40,9 +46,9 @@ const LoginPage = () => {
       if (data.success) {
 
         localStorage.setItem('authToken', data.token);
-        
+
         window.location.href = '/dashboard';
-        
+
         toast.success(data.message || 'Login successful!')
 
       } else {
