@@ -24,6 +24,18 @@ const LoginPage = () => {
     setIsLoaded(true);
   }, []);
 
+  const getRoleBasedDashboard = (role) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return '/admin';
+      case 'recruiter':
+        return '/recruiter';
+      case 'user':
+      default:
+        return '/user';
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -46,8 +58,13 @@ const LoginPage = () => {
       if (data.success) {
 
         localStorage.setItem('authToken', data.token);
+        localStorage.setItem('preference', data.user.prefrence);
+        localStorage.setItem('userRole', data.user.role);
+        localStorage.setItem('userId', data.user.id); 
 
-        window.location.href = '/dashboard';
+        // Role-based navigation
+        const dashboardUrl = getRoleBasedDashboard(data.user.role);
+        window.location.href = dashboardUrl;
 
         toast.success(data.message || 'Login successful!')
 

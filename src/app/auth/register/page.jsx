@@ -33,6 +33,19 @@ const RegisterPage = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  const getRoleBasedDashboard = (role) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return '/admin';
+      case 'recruiter':
+        return '/recruiter';
+      case 'user':
+      default:
+        return '/user';
+    }
+  };
+
+
   const handleRegister = async () => {
     setIsLoading(true);
     setError('');
@@ -60,26 +73,42 @@ const RegisterPage = () => {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          preference: formData.preference
+          prefrence: formData.preference  // Note: backend expects 'prefrence' (with typo)
         })
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        setSuccess(true);
-        //Store JWT token automatically (if backend returns token)
-        if (data.token) {
-          localStorage.setItem('authToken', data.token);
+      // Add debugging
+      console.log('Response status:', response.status);
+      console.log('Response data:', data);
 
-          window.location.href = '/dashboard';
+      if (response.ok && data.success) {
+        console.log('Registration successful, storing data...');
+
+        // Store data in localStorage - Fix the property access
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('preference', data.user.prefrence);
+        localStorage.setItem('userRole', 'user');
+        localStorage.setItem('userId', data.user.id);
+        setSuccess(true);
+
+        // Role-based navigation
+        const dashboardUrl = getRoleBasedDashboard(data.user.role);
+        window.location.href = dashboardUrl;
+
+        // Show success message if toast is available
+        if (typeof toast !== 'undefined') {
           toast.success(data.message || 'Registration successful!');
-        } else {
-          // If no token returned, redirect to login after delay
-          setTimeout(() => {
-            window.location.href = '/auth/login';
-          }, 2000);
         }
+
+        // Redirect after short delay
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 2000);
+      } else {
+        console.log('Registration failed:', data);
+        setError(data.message || 'Registration failed');
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -87,9 +116,7 @@ const RegisterPage = () => {
     } finally {
       setIsLoading(false);
     }
-
   };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({

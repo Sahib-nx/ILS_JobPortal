@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import {  Building2, Mail, Calendar, FileText, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
+import { Building2, Mail, Calendar, FileText, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { getUserId } from '../../../../utils';
+import { getUserId } from '@/app/utils';
 
 const Page = () => {
   const [recruiter, setRecruiter] = useState(null);
@@ -33,6 +33,7 @@ const Page = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`
           }
         });
 
@@ -169,11 +170,11 @@ const Page = () => {
         {/* Back Button */}
         <div className="mb-6">
           <button
-            onClick={() => window.location.href = '/admin/recruiter'}
+            onClick={() => window.location.href = '/admin'}
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Back to Recruiters</span>
+            <span>Back</span>
           </button>
         </div>
 
@@ -241,9 +242,9 @@ const Page = () => {
                   {recruiter.website && (
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Website</p>
-                      <a 
-                        href={`https://${recruiter.website}`} 
-                        target="_blank" 
+                      <a
+                        href={`https://${recruiter.website}`}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 font-medium break-all"
                       >
@@ -261,7 +262,7 @@ const Page = () => {
                 <Building2 className="w-5 h-5 text-purple-600 mr-2" />
                 Company Details
               </h2>
-              
+
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <p className="text-sm font-semibold text-blue-800 mb-2">Company Name</p>
@@ -299,11 +300,10 @@ const Page = () => {
                   <button
                     onClick={() => handleStatusChange('approved')}
                     disabled={actionLoading}
-                    className={`w-full font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${
-                      actionLoading 
-                        ? 'bg-gray-400 cursor-not-allowed' 
+                    className={`w-full font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${actionLoading
+                        ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-green-600 hover:bg-green-700'
-                    } text-white`}
+                      } text-white`}
                   >
                     {actionLoading && actionLoading === 'approved' ? (
                       <>
@@ -321,11 +321,10 @@ const Page = () => {
                   <button
                     onClick={() => handleStatusChange('rejected')}
                     disabled={actionLoading}
-                    className={`w-full font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${
-                      actionLoading 
-                        ? 'bg-gray-400 cursor-not-allowed' 
+                    className={`w-full font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${actionLoading
+                        ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-red-600 hover:bg-red-700'
-                    } text-white`}
+                      } text-white`}
                   >
                     {actionLoading && actionLoading === 'rejected' ? (
                       <>
@@ -390,11 +389,10 @@ const Page = () => {
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <span className="text-gray-600 text-sm">Status</span>
-                  <span className={`text-sm font-medium px-2 py-1 rounded capitalize ${
-                    recruiter.applicationStatus === 'approved' ? 'text-green-700 bg-green-100' :
-                    recruiter.applicationStatus === 'rejected' ? 'text-red-700 bg-red-100' :
-                    'text-yellow-700 bg-yellow-100'
-                  }`}>
+                  <span className={`text-sm font-medium px-2 py-1 rounded capitalize ${recruiter.applicationStatus === 'approved' ? 'text-green-700 bg-green-100' :
+                      recruiter.applicationStatus === 'rejected' ? 'text-red-700 bg-red-100' :
+                        'text-yellow-700 bg-yellow-100'
+                    }`}>
                     {recruiter.applicationStatus || 'Pending'}
                   </span>
                 </div>

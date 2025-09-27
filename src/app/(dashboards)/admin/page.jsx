@@ -1,377 +1,324 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  Plus, Eye, Users, MapPin, Clock, Briefcase, Search,
-  Calendar, CheckCircle, Loader2, AlertCircle
-} from 'lucide-react';
-import { getUserId } from '../../utils';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Building2, Mail, Phone, Calendar, MapPin, Users, Eye } from 'lucide-react';
+import { getUserId } from '@/app/utils';
 
-const AdminJobsDashboard = () => {
-  const [jobs, setJobs] = useState([]);
-  const [stats, setStats] = useState({
-    totalJobs: 0,
-    totalApplications: 0,
-    pendingReviews: 0,
-    activeJobs: 0
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+const Page = () => {
+  const [recruiters, setRecruiters] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
 
-  // Memoized filtered jobs for performance
-  const filteredJobs = useMemo(() => {
-    if (!jobs.length) return [];
-    
-    return jobs.filter(job => {
-      // More robust search matching
-      const searchFields = [
-        job.title,
-        job.description, 
-        job.company,
-        job.location
-      ].filter(Boolean).join(' ').toLowerCase();
-      
-      const matchesSearch = !searchTerm || searchFields.includes(searchTerm.toLowerCase());
-      const jobStatus = job.status || 'active';
-      const matchesFilter = filterType === 'all' || jobStatus === filterType;
-      
-      return matchesSearch && matchesFilter;
-    });
-  }, [jobs, searchTerm, filterType]);
-
-  // Optimized stats calculation
-  const calculatedStats = useMemo(() => {
-    const totalJobs = jobs.length;
-    const totalApplications = jobs.reduce((sum, job) => 
-      sum + (Array.isArray(job.applicants) ? job.applicants.length : 0), 0
-    );
-    const activeJobs = jobs.filter(job => 
-      (job.status || 'active') === 'active'
-    ).length;
-    const pendingReviews = jobs.reduce((sum, job) => {
-      if (!Array.isArray(job.applicants)) return sum;
-      return sum + job.applicants.filter(app => 
-        (app.status || 'pending') === 'pending'
-      ).length;
-    }, 0);
-
-    return {
-      totalJobs,
-      totalApplications,
-      pendingReviews,
-      activeJobs
-    };
-  }, [jobs]);
-
-  // Update stats when calculated stats change
   useEffect(() => {
-    setStats(calculatedStats);
-  }, [calculatedStats]);
-
-  // Fetch admin data with better error handling
-  const fetchAdminData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const userId = getUserId();
-      if (!userId) {
-        throw new Error('User not authenticated');
-      }
-
-      const authToken = localStorage.getItem('authToken');
-      if (!authToken) {
-        throw new Error('No authentication token found');
-      }
-
-      const jobsResponse = await fetch('http://localhost:4441/api/job/', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!jobsResponse.ok) {
-        if (jobsResponse.status === 401 || jobsResponse.status === 403) {
-          throw new Error('Authentication failed');
-        }
-        throw new Error(`Failed to fetch jobs: ${jobsResponse.status}`);
-      }
-
-      const jobsData = await jobsResponse.json();
-      
-      // Ensure jobsData is an array
-      const jobsArray = Array.isArray(jobsData) ? jobsData : 
-                       (jobsData.data && Array.isArray(jobsData.data)) ? jobsData.data :
-                       (jobsData.jobs && Array.isArray(jobsData.jobs)) ? jobsData.jobs : [];
-
-      console.log('Fetched jobs:', jobsArray); // Debug log
-
-      // Filter jobs by current user with more flexible matching
-      const userJobs = jobsArray.filter(job => {
-        const jobPosterId = job.postedBy?._id || job.postedBy || job.userId || job.createdBy;
-        return jobPosterId === userId;
-      });
-
-      console.log('User jobs after filtering:', userJobs); // Debug log
-
-      // Sort jobs by creation date
-      const sortedJobs = userJobs.sort((a, b) => {
-        const dateA = new Date(a.createdAt || a.datePosted || a.created_at);
-        const dateB = new Date(b.createdAt || b.datePosted || b.created_at);
-        return dateB - dateA;
-      });
-
-      setJobs(sortedJobs);
-
-    } catch (error) {
-      console.error('Error fetching admin data:', error);
-      setError(error.message);
-      
-      // Handle authentication errors
-      if (error.message.includes('Authentication') || error.message.includes('User not authenticated')) {
-        // Redirect to login after a delay
-        setTimeout(() => {
-          window.location.href = '/auth/login';
-        }, 2000);
-      }
-    } finally {
-      setIsLoading(false);
+    // User authentication check
+    const userId = getUserId();
+    if (!userId) {
+      // Redirect to login if no valid token
+      window.location.href = '/auth/login';
+      return;
     }
+
+    const fetchRecruiters = async () => {
+      try {
+        setLoading(true);
+
+        const response = await fetch('http://localhost:4441/api/Admin/');
+        const data = await response.json();
+
+        // Simulate loading delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setRecruiters(data);
+      } catch (error) {
+        console.error('Error fetching recruiters:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecruiters();
   }, []);
 
-  useEffect(() => {
-    fetchAdminData();
-  }, [fetchAdminData]);
+  // Function to refresh recruiters data (call this after status changes)
+  const refreshRecruiters = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:4441/api/Admin/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-cache' // Prevent caching issues
+      });
 
-  // Loading state
-  if (isLoading) {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setRecruiters(data);
+    } catch (error) {
+      console.error('Error refreshing recruiters:', error);
+      // Todo: show a toast notification here
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredRecruiters = recruiters
+    .filter(recruiter => {
+
+      const companyName = recruiter.companyName || '';
+      const recruiterName = recruiter.userId?.name || '';
+      const email = recruiter.companyEmail || '';
+
+      const matchesSearch = companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        recruiterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        email.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Fixed: status field is applicationStatus in API response
+      const status = recruiter.applicationStatus || 'pending';
+      const matchesFilter = filterStatus === 'all' || status === filterStatus;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.submittedAt) - new Date(a.submittedAt);
+      if (sortBy === 'oldest') return new Date(a.submittedAt) - new Date(b.submittedAt);
+      if (sortBy === 'company') return a.companyName.localeCompare(b.companyName);
+      return 0;
+    });
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#1c398e] animate-spin mx-auto mb-4" />
-          <p className="text-blue-600 font-medium">Loading admin dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Dashboard</h2>
-          <p className="text-red-500 mb-6">{error}</p>
-          <button 
-            onClick={fetchAdminData}
-            className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 py-3 rounded-xl hover:shadow-xl transition-all duration-300 font-semibold"
-          >
-            Try Again
-          </button>
-          {error.includes('Authentication') && (
-            <p className="text-sm text-gray-600 mt-4">Redirecting to login...</p>
-          )}
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-blue-600 font-medium">Loading Admin Panel...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white">
-      {/* Header - Responsive */}
-      <header className="bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4">
-            <div className="flex items-center space-x-3 flex-shrink-0">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#1c398e] to-[#3b82f6] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                ILS
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-[#1c398e]">Admin Panel</h1>
-                <p className="text-xs text-blue-600">Job Management</p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-blue-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="animate-fade-in">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Panel</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Manage and review recruiter registration requests
+              </p>
             </div>
-
-            <button
-              onClick={() => window.location.href = '/admin/jobs/create'}
-              className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-105 font-semibold flex items-center space-x-2 text-sm sm:text-base"
-            >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">Post New Job</span>
-              <span className="sm:hidden">Post</span>
-            </button>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 animate-slide-in w-full sm:w-auto">
+              <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                <span className="text-sm text-blue-600 font-medium">
+                  Total Requests: {recruiters.length}
+                </span>
+              </div>
+              <button
+                onClick={refreshRecruiters}
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 w-full sm:w-auto"
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Stats Cards - Responsive Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-          {[
-            { label: 'Total Jobs', value: stats.totalJobs, icon: Briefcase, color: 'from-blue-500 to-blue-600' },
-            { label: 'Applications', value: stats.totalApplications, icon: Users, color: 'from-green-500 to-green-600' },
-            { label: 'Pending Reviews', value: stats.pendingReviews, icon: Clock, color: 'from-yellow-500 to-yellow-600' },
-            { label: 'Active Jobs', value: stats.activeJobs, icon: CheckCircle, color: 'from-purple-500 to-purple-600' }
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white/80 backdrop-blur-lg p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600 font-medium truncate">{stat.label}</p>
-                  <p className="text-xl sm:text-3xl font-bold text-[#1c398e]">{stat.value}</p>
-                </div>
-                <div className={`w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br ${stat.color} rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0`}>
-                  <stat.icon className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Search and Filters - Responsive */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg border border-white/50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Search and Filter Bar */}
+        <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-4 sm:p-6 mb-6 sm:mb-8 animate-fade-in-up">
           <div className="flex flex-col gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 w-5 h-5" />
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1c398e] w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search jobs..."
+                placeholder="Search by company, recruiter, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300 text-[#1c398e]"
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg text-[#1c398e] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base"
               />
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              {['all', 'active', 'closed'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setFilterType(filter)}
-                  className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 font-medium text-sm sm:text-base ${
-                    filterType === filter
-                      ? 'bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white shadow-lg'
-                      : 'bg-white border border-blue-200 text-blue-600 hover:bg-blue-50'
-                  }`}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 sm:flex-none">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="appearance-none bg-white pl-10 pr-8 py-3 border border-gray-200 rounded-lg focus:ring-2 text-[#1c398e] focus:ring-blue-500 focus:border-transparent w-full sm:min-w-32"
                 >
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </button>
-              ))}
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-white px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 text-[#1c398e] focus:ring-blue-500 focus:border-transparent flex-1 sm:flex-none"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="company">Company Name</option>
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Jobs List - Responsive */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-xl sm:rounded-2xl shadow-lg border border-white/50">
-          <div className="p-4 sm:p-6 border-b border-blue-100">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#1c398e]">Your Job Posts</h2>
-            <p className="text-blue-600 text-sm sm:text-base">Manage and track your job postings</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Showing {filteredJobs.length} of {jobs.length} jobs
-            </p>
+        {/* Recruiters Grid */}
+        {filteredRecruiters.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-8 sm:p-12 text-center">
+            <Building2 className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No recruiters found</h3>
+            <p className="text-sm sm:text-base text-gray-500">Try adjusting your search criteria or filters.</p>
           </div>
-
-          <div className="divide-y divide-blue-100">
-            {filteredJobs.map((job) => (
-              <div key={job._id || job.id} className="p-4 sm:p-6 hover:bg-blue-50/50 transition-all duration-300 group">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
-                      <h3 className="text-lg sm:text-xl font-bold text-[#1c398e] group-hover:text-blue-600 transition-colors truncate">
-                        {job.title || 'Untitled Job'}
+        ) : (
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredRecruiters.map((recruiter, index) => (
+              <div
+                key={recruiter._id}
+                className="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 transform hover:-translate-y-1 animate-fade-in-up"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <div className="p-4 sm:p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4 gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+                        {recruiter.companyName}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold self-start ${
-                        (job.status || 'active') === 'active'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
+                      <p className="text-sm text-gray-600 truncate">{recruiter.userId?.name || 'Unknown'}</p>
+                    </div>
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${(recruiter.applicationStatus || 'pending') === 'pending'
+                      ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                      : (recruiter.applicationStatus || 'pending') === 'approved'
+                        ? 'bg-green-100 text-green-800 border border-green-200'
+                        : 'bg-red-100 text-red-800 border border-red-200'
                       }`}>
-                        {(job.status || 'active').toUpperCase()}
-                      </span>
-                    </div>
+                      {(recruiter.applicationStatus || 'pending').charAt(0).toUpperCase() + (recruiter.applicationStatus || 'pending').slice(1)}
+                    </span>
+                  </div>
 
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-600">
-                      <div className="flex items-center min-w-0">
-                        <MapPin className="w-4 h-4 mr-1 text-blue-400 flex-shrink-0" />
-                        <span className="truncate">{job.location || 'Not specified'}</span>
+                  {/* Company Info */}
+                  <div className="space-y-2 sm:space-y-3 mb-4">
+                    <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                      <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-blue-500 flex-shrink-0" />
+                      <span className="truncate">{recruiter.companyEmail}</span>
+                    </div>
+                    <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                      <Phone className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-blue-500 flex-shrink-0" />
+                      <span>{recruiter.phone}</span>
+                    </div>
+                    <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-blue-500 flex-shrink-0" />
+                      <span className="truncate">{recruiter.location}</span>
+                    </div>
+                    {recruiter.website && (
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                        <Building2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-blue-500 flex-shrink-0" />
+                        <span className="truncate">{recruiter.website}</span>
                       </div>
-                      <div className="flex items-center">
-                        <Briefcase className="w-4 h-4 mr-1 text-blue-400 flex-shrink-0" />
-                        <span>{job.jobType || job.type || 'Full-time'}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1 text-blue-400 flex-shrink-0" />
-                        <span>{new Date(job.createdAt || job.datePosted || Date.now()).toLocaleDateString()}</span>
-                      </div>
+                    )}
+                    <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-blue-500 flex-shrink-0" />
+                      <span>{formatDate(recruiter.submittedAt)}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between lg:justify-end gap-4">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center space-x-2 bg-gradient-to-r from-[#dbeafe] to-blue-100 px-3 sm:px-4 py-2 rounded-lg">
-                        <Users className="w-4 h-4 text-[#1c398e]" />
-                        <span className="font-bold text-[#1c398e]">
-                          {Array.isArray(job.applicants) ? job.applicants.length : 0}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-600 mt-1">Applications</p>
-                    </div>
+                  {/* Description */}
+                  {recruiter.companyDetails && (
+                    <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6 line-clamp-2">
+                      {recruiter.companyDetails}
+                    </p>
+                  )}
 
-                    <button
-                      onClick={() => window.location.href = `/admin/jobs/${job._id || job.id}`}
-                      className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center space-x-2 text-sm sm:text-base"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span className="hidden sm:inline">View Applications</span>
-                      <span className="sm:hidden">View</span>
-                    </button>
-                  </div>
+                  {/* Action Button */}
+                  <button
+                    onClick={() => window.location.href = `/admin/${recruiter._id}`}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2.5 sm:py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2 text-sm"
+                  >
+                    <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span>View Details</span>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
+        )}
+      </div>
 
-          {/* Empty State */}
-          {filteredJobs.length === 0 && (
-            <div className="p-8 sm:p-12 text-center">
-              <Briefcase className="w-12 sm:w-16 h-12 sm:h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-bold text-gray-500 mb-2">No jobs found</h3>
-              <p className="text-sm sm:text-base text-gray-400 mb-6 max-w-md mx-auto">
-                {searchTerm || filterType !== 'all'
-                  ? 'Try adjusting your search or filter criteria'
-                  : 'Create your first job posting to get started'
-                }
-              </p>
-              <button
-                onClick={() => window.location.href = '/admin/jobs/create'}
-                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
-              >
-                Post Your First Job
-              </button>
-            </div>
-          )}
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes fade-in-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slide-in {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.6s ease-out;
+        }
+        
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out both;
+        }
+        
+        .animate-slide-in {
+          animation: slide-in 0.6s ease-out;
+        }
+        
+        .line-clamp-1 {
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 1;
+          -webkit-box-orient: vertical;
+        }
+        
+        .line-clamp-2 {
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
 
-          {/* Debug Info (Remove in production) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="p-4 border-t border-blue-100 bg-gray-50">
-              <details className="text-xs text-gray-600">
-                <summary className="cursor-pointer font-semibold">Debug Info</summary>
-                <div className="mt-2 space-y-1">
-                  <p>Total jobs fetched: {jobs.length}</p>
-                  <p>Filtered jobs: {filteredJobs.length}</p>
-                  <p>Current user ID: {getUserId()}</p>
-                  <p>Search term: "{searchTerm}"</p>
-                  <p>Filter type: {filterType}</p>
-                </div>
-              </details>
-            </div>
-          )}
-        </div>
-      </main>
+        /* Mobile responsive improvements */
+        @media (max-width: 640px) {
+          .animate-fade-in-up {
+            animation-delay: 0ms !important;
+          }
+        }
+        
+        /* Ensure proper text truncation on mobile */
+        @media (max-width: 480px) {
+          .line-clamp-2 {
+            -webkit-line-clamp: 3;
+          }
+        }
+      `}</style>
     </div>
   );
 };
 
-export default AdminJobsDashboard;
+export default Page;

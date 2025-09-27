@@ -206,7 +206,7 @@ const Page = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => window.location.href = '/admin'}
+                onClick={() => window.location.href = '/recruiter'}
                 className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-[#1c398e]" />

@@ -176,7 +176,7 @@ const CompanyRegistrationForm = () => {
           phone: '',
           website: ''
         });
-        router.push('/dashboard');
+        router.push('/jobs-landing');
       } else {
         setSubmitStatus({
           type: 'error',

@@ -39,7 +39,7 @@ const Page = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}` // Add auth header
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}` 
                 },
                 body: JSON.stringify(jobData)
             });
@@ -48,7 +48,7 @@ const Page = () => {
                 const result = await response.json();
                 setSuccess(true);
                 setTimeout(() => {
-                    window.location.href = `/admin/jobs/${result._id}`;
+                    window.location.href = `/recruiter/jobs/${result._id}`;
                 }, 2000);
             } else {
                 const errorData = await response.json();

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
     Search, MapPin, Clock, Users, Briefcase, TrendingUp,
-    Star, ChevronRight, Building, ArrowRight, Zap, AlertCircle
+    Star, ChevronRight, Building, ArrowRight, Zap, AlertCircle, User
 } from "lucide-react";
 
 // Constants
@@ -36,76 +36,6 @@ const formatDate = (dateString) => {
 };
 
 // Custom Hooks
-const useAuth = () => {
-    const [user, setUser] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [loading, setLoading] = useState(true);
-
-    const checkAuthStatus = useCallback(async () => {
-        try {
-            const token = localStorage.getItem('authToken');
-            
-            if (!token) {
-                setLoading(false);
-                return;
-            }
-
-            const response = await fetch('http://localhost:4441/auth/verify', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setUser(data.user);
-                setIsAuthenticated(true);
-            } else {
-                localStorage.removeItem('authToken');
-                setIsAuthenticated(false);
-                setUser(null);
-            }
-        } catch (error) {
-            console.error('Auth check failed:', error);
-            localStorage.removeItem('authToken');
-            setIsAuthenticated(false);
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        checkAuthStatus();
-    }, [checkAuthStatus]);
-
-    const handleDashboardNavigation = () => {
-        if (!user || !user.role) return;
-
-        switch (user.role.toLowerCase()) {
-            case 'admin':
-                window.location.href = '/admin/dashboard';
-                break;
-            case 'recruiter':
-                window.location.href = '/recruiter/dashboard';
-                break;
-            case 'user':
-            default:
-                window.location.href = '/user/dashboard';
-                break;
-        }
-    };
-
-    return {
-        user,
-        isAuthenticated,
-        loading: loading,
-        handleDashboardNavigation
-    };
-};
-
 const useJobs = () => {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -190,33 +120,31 @@ const useFilters = (jobs) => {
 
 // Components
 const Navigation = ({ isLoaded }) => {
-    const { user, isAuthenticated, loading: authLoading, handleDashboardNavigation } = useAuth();
+    const [userRole, setUserRole] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-    // Show loading state while checking authentication
-    if (authLoading) {
-        return (
-            <nav className={`bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-50 transition-all duration-700 ${
-                isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-            }`}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#1c398e] to-[#3b82f6] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                ILS
-                            </div>
-                            <div className="hidden sm:block">
-                                <h1 className="text-xl font-bold text-[#1c398e]">ILS</h1>
-                                <p className="text-xs text-blue-600">Find Your Dream Job</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 sm:space-x-3">
-                            <div className="animate-pulse bg-gray-200 rounded-lg h-9 w-20"></div>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-        );
-    }
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        const role = localStorage.getItem('userRole');
+
+        
+        setIsLoggedIn(!!token);
+        setUserRole(role);
+    }, []);
+
+    const handleUserIconClick = () => {
+        if (userRole === 'user') {
+            window.location.href = '/user';
+        } else if (userRole === 'recruiter') {
+            console.log('Navigating to recruiter dashboard');
+            window.location.href = '/recruiter';
+        } else if (userRole === 'Admin') {
+            console.log('Navigating to admin dashboard');
+            window.location.href = '/admin';
+        } else {
+            console.log('No valid role found for navigation');
+        }
+    };
 
     return (
         <nav className={`bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-50 transition-all duration-700 ${
@@ -235,44 +163,40 @@ const Navigation = ({ isLoaded }) => {
                     </div>
 
                     <div className="flex items-center space-x-2 sm:space-x-3">
-                        {isAuthenticated && user ? (
-                            // Authenticated user buttons
-                            <>
-                                {/* Dashboard button */}
-                                <button
-                                    onClick={handleDashboardNavigation}
-                                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-3 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base"
-                                >
-                                    Dashboard
-                                </button>
-
-                                {/* Recruiter button - only show if user role is NOT recruiter */}
-                                {user.role && user.role.toLowerCase() !== 'recruiter' && (
-                                    <button
-                                        onClick={() => { window.location.href = 'recruiter-form'; }}
-                                        className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-2 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base whitespace-nowrap"
-                                    >
-                                        Recruiter
-                                    </button>
-                                )}
-                            </>
+                        {console.log('Rendering buttons - isLoggedIn:', isLoggedIn, 'userRole:', userRole)}
+                        {!isLoggedIn ? (
+                            <button
+                                onClick={() => { 
+                                    console.log('Login button clicked');
+                                    window.location.href = 'auth/login'; 
+                                }}
+                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-3 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base">
+                                Login
+                            </button>
                         ) : (
-                            // Non-authenticated user buttons (original buttons)
-                            <>
-                                <button
-                                    onClick={() => { window.location.href = 'auth/login'; }}
-                                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-3 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base"
-                                >
-                                    Login
-                                </button>
-                                <button
-                                    onClick={() => { window.location.href = 'recruiter-form'; }}
-                                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-2 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base whitespace-nowrap"
-                                >
-                                    Recruiter
-                                </button>
-                            </>
+                            <button
+                                onClick={() => {
+                                    console.log('User icon button clicked');
+                                    handleUserIconClick();
+                                }}
+                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white p-2 flex gap-2 rounded-lg hover:shadow-lg transition-all duration-300"
+                                title={`Go to ${userRole} dashboard`}>
+                                <User className="w-5 h-5" />
+                                <span>Dashboard</span>
+                            </button>
                         )}
+                        
+                        {userRole === 'user' && (
+                            <button
+                                onClick={() => { 
+                                    console.log('Recruiter button clicked');
+                                    window.location.href = 'recruiter-form'; 
+                                }}
+                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-2 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base whitespace-nowrap">
+                                Recruiter
+                            </button>
+                        )}
+                        
                     </div>
                 </div>
             </div>
@@ -314,7 +238,6 @@ const LoadingSkeleton = () => (
         </div>
     </div>
 );
-
 
 const HeroSection = ({ isLoaded, searchTerm, setSearchTerm }) => (
     <section className={`relative py-12 lg:py-20 px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
@@ -461,18 +384,32 @@ const JobCard = ({ job, index, featured = false }) => (
                 </div>
             )}
             {job.datePosted && (
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-600 mb-2">
                     <Clock className="w-4 h-4 mr-2 text-blue-400" />
                     <span className="text-sm">Posted {formatDate(job.datePosted)}</span>
                 </div>
             )}
+            {job.jobStatus && (
+                <div className="flex items-center text-gray-600">
+                    <div className={`w-2 h-2 rounded-full mr-2 ${job.jobStatus === 'active' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                    <span className={`text-sm font-medium ${job.jobStatus === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                        {job.jobStatus === 'active' ? 'Active' : 'Closed'}
+                    </span>
+                </div>
+            )}
         </div>
 
-        <button 
-        onClick={() => window.location.href = `/dashboard/${job._id}`}
-        className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white py-3 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 font-semibold">
-            See Details
-        </button>
+        {job.jobStatus === 'closed' || job.jobStatus === 'close' ? (
+            <div className="w-full bg-gray-400 text-white py-3 rounded-xl font-semibold text-center cursor-not-allowed">
+                Closed
+            </div>
+        ) : (
+            <button 
+            onClick={() => window.location.href = `/jobs-landing/${job._id}`}
+            className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white py-3 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 font-semibold">
+                See Details
+            </button>
+        )}
     </div>
 );
 
@@ -506,17 +443,31 @@ const JobListCard = ({ job, index }) => (
                                 <span>Posted: {formatDate(job.datePosted)}</span>
                             </div>
                         )}
+                        {job.jobStatus && (
+                            <div className="flex items-center gap-2 text-sm">
+                                <div className={`w-2 h-2 rounded-full ${job.jobStatus === 'active' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                                <span className={`font-medium ${job.jobStatus === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {job.jobStatus === 'active' ? 'Active' : 'Closed'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
             <div className="flex items-center space-x-3 mt-4 lg:mt-0">
-                <button 
-                 onClick={() => window.location.href = `/dashboard/${job._id}`}
-                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 font-semibold flex items-center space-x-2">
-                    <span>See Details</span>
-                    <ChevronRight className="w-4 h-4" />
-                </button>
+                {job.jobStatus === 'closed' || job.jobStatus === 'close' ? (
+                    <div className="bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold cursor-not-allowed">
+                        Closed
+                    </div>
+                ) : (
+                    <button 
+                     onClick={() => window.location.href = `/jobs-landing/${job._id}`}
+                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 font-semibold flex items-center space-x-2">
+                        <span>See Details</span>
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                )}
             </div>
         </div>
     </div>
