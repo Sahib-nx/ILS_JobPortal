@@ -133,9 +133,9 @@ const Navigation = ({ isLoaded }) => {
     }, []);
 
     const handleUserIconClick = () => {
-        if (userRole === 'user') {
+        if (userRole === 'User') {
             window.location.href = '/user';
-        } else if (userRole === 'recruiter') {
+        } else if (userRole === 'Recruiter') {
             console.log('Navigating to recruiter dashboard');
             window.location.href = '/recruiter';
         } else if (userRole === 'Admin') {
@@ -186,7 +186,7 @@ const Navigation = ({ isLoaded }) => {
                             </button>
                         )}
                         
-                        {userRole === 'user' && (
+                        {userRole === 'User' && (
                             <button
                                 onClick={() => { 
                                     console.log('Recruiter button clicked');

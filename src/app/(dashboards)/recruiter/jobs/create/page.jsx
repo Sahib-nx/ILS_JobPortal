@@ -5,6 +5,7 @@ import {
     Plus, ArrowLeft,
     CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
+import { getUserId } from '@/app/utils';
 
 const Page = () => {
     const [formData, setFormData] = useState({
@@ -48,7 +49,7 @@ const Page = () => {
                 const result = await response.json();
                 setSuccess(true);
                 setTimeout(() => {
-                    window.location.href = `/recruiter/jobs/${result._id}`;
+                    window.location.href =`/recruiter`;
                 }, 2000);
             } else {
                 const errorData = await response.json();
@@ -61,22 +62,6 @@ const Page = () => {
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    const getUserId = () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) return null;
-
-        try {
-            const payloadBase64 = token.split('.')[1]; // JWT payload
-            const decoded = JSON.parse(atob(payloadBase64));
-            console.log('Decoded JWT:', decoded.UserId);
-            return decoded.UserId;
-        } catch (err) {
-            console.error('Invalid token', err);
-            return null;
-        }
-
     };
 
     const handleInputChange = (e) => {
@@ -98,7 +83,7 @@ const Page = () => {
                     <p className="text-blue-600 mb-6">Your job posting is now live and accepting applications.</p>
                     <div className="flex items-center justify-center">
                         <Loader2 className="w-6 h-6 text-[#1c398e] animate-spin mr-2" />
-                        <span className="text-[#1c398e]">Redirecting to Admin dashboard...</span>
+                        <span className="text-[#1c398e]">Redirecting to Recruiter dashboard...</span>
                     </div>
                 </div>
             </div>

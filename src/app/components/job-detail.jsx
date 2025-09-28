@@ -135,87 +135,87 @@ const JobDetailPage = ({ jobId }) => {
 
 
 
-const handleJobApplication = async (e) => {
-  e.preventDefault();
+  const handleJobApplication = async (e) => {
+    e.preventDefault();
 
-  if (!user || !user.id) {
-    handleLoginRedirect();
-    return;
-  }
-
-  setIsApplying(true);
-
-  try {
-    const formData = new FormData();
-    formData.append('email', applicationData.email);
-    formData.append('phone', applicationData.phone);
-
-    if (applicationData.resume) {
-      formData.append('resume', applicationData.resume);
+    if (!user || !user.id) {
+      handleLoginRedirect();
+      return;
     }
 
-    const response = await fetch(`http://localhost:4441/api/job/${jobId}/apply/${user.id}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-      },
-      body: formData
-    });
+    setIsApplying(true);
 
-    // IMPROVED: Handle both JSON and non-JSON responses
-    let result;
-    const contentType = response.headers.get('content-type');
-    
-    if (contentType && contentType.includes('application/json')) {
-      try {
-        result = await response.json();
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        result = { error: 'Invalid response format from server' };
+    try {
+      const formData = new FormData();
+      formData.append('email', applicationData.email);
+      formData.append('phone', applicationData.phone);
+
+      if (applicationData.resume) {
+        formData.append('resume', applicationData.resume);
       }
-    } else {
-      // Handle non-JSON responses (like HTML error pages)
-      const textResponse = await response.text();
-      console.error('Non-JSON response:', textResponse);
-      result = { 
-        error: response.ok ? 'Unexpected server response' : `Server error (${response.status}): ${response.statusText}` 
-      };
-    }
 
-    if (response.ok && result.message) {
-      // Success case
-      setShowApplicationForm(false);
-      alert(result.message || 'Application submitted successfully!');
-      console.log('Application successful:', result);
-
-      // Reset form
-      setApplicationData({
-        resume: null,
-        email: '',
-        phone: '',
+      const response = await fetch(`http://localhost:4441/api/job/${jobId}/apply/${user.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: formData
       });
-    } else {
-      // Error case
-      const errorMessage = result.error || result.message || 'Application failed. Please try again.';
-      alert(errorMessage);
-      console.error('Application error:', result);
-    }
 
-  } catch (error) {
-    console.error('Network/Request error:', error);
-    
-    // Handle network errors
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      alert('Network error. Please check your connection and try again.');
-    } else {
-      alert('Something went wrong. Please try again.');
-    }
-  } finally {
-    setIsApplying(false);
-  }
-};
+      // IMPROVED: Handle both JSON and non-JSON responses
+      let result;
+      const contentType = response.headers.get('content-type');
 
-//resume chnage
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          result = await response.json();
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          result = { error: 'Invalid response format from server' };
+        }
+      } else {
+        // Handle non-JSON responses (like HTML error pages)
+        const textResponse = await response.text();
+        console.error('Non-JSON response:', textResponse);
+        result = {
+          error: response.ok ? 'Unexpected server response' : `Server error (${response.status}): ${response.statusText}`
+        };
+      }
+
+      if (response.ok && result.message) {
+        // Success case
+        setShowApplicationForm(false);
+        alert(result.message || 'Application submitted successfully!');
+        console.log('Application successful:', result);
+
+        // Reset form
+        setApplicationData({
+          resume: null,
+          email: '',
+          phone: '',
+        });
+      } else {
+        // Error case
+        const errorMessage = result.error || result.message || 'Application failed. Please try again.';
+        alert(errorMessage);
+        console.error('Application error:', result);
+      }
+
+    } catch (error) {
+      console.error('Network/Request error:', error);
+
+      // Handle network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        alert('Network error. Please check your connection and try again.');
+      } else {
+        alert('Something went wrong. Please try again.');
+      }
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  //resume chnage
   const handleResumeChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -322,9 +322,9 @@ const handleJobApplication = async (e) => {
             <div className="flex items-center space-x-3 sm:space-x-4">
               <button
                 onClick={() => window.history.back()}
-                className="p-2 sm:p-3 hover:bg-gray-100 rounded-xl transition-colors"
+                className="p-1 sm:p-3 hover:bg-gray-100 rounded-xl transition-colors"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-700" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
               </button>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">

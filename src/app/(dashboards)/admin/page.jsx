@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Building2, Mail, Phone, Calendar, MapPin, Users, Eye } from 'lucide-react';
+import { Search, Filter, Building2, Mail, Phone, Calendar, User, MapPin, Eye } from 'lucide-react';
 import { getUserId } from '@/app/utils';
 
 const Page = () => {
@@ -10,13 +10,15 @@ const Page = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
+  const [authError, setAuthError] = useState(null);
 
+  const userId = getUserId();
   useEffect(() => {
     // User authentication check
-    const userId = getUserId();
     if (!userId) {
       // Redirect to login if no valid token
       window.location.href = '/auth/login';
+      setAuthError("Unauthorised User!")
       return;
     }
 
@@ -39,6 +41,18 @@ const Page = () => {
 
     fetchRecruiters();
   }, []);
+
+  // Function to redirect to login page
+  const redirectToLogin = () => {
+    // Clear any stored tokens
+    localStorage.clear();
+
+    // Redirect to login page 
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/login';
+    }
+  };
+
 
   // Function to refresh recruiters data (call this after status changes)
   const refreshRecruiters = async () => {
@@ -77,7 +91,7 @@ const Page = () => {
         recruiterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         email.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Fixed: status field is applicationStatus in API response
+      // status field is applicationStatus in API response
       const status = recruiter.applicationStatus || 'pending';
       const matchesFilter = filterStatus === 'all' || status === filterStatus;
       return matchesSearch && matchesFilter;
@@ -103,6 +117,29 @@ const Page = () => {
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
           <p className="text-blue-600 font-medium">Loading Admin Panel...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authentication error state
+  if (authError || !userId || localStorage.getItem("userRole") !== 'Admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-lg shadow-lg max-w-md mx-4">
+          <div className="mb-4">
+            <User className="h-12 w-12 text-red-600 mx-auto" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-4">
+            {authError || 'You need to be logged in as a admin to access this dashboard.'}
+          </p>
+          <button
+            onClick={redirectToLogin}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );

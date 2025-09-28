@@ -1,52 +1,51 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, Star, MapPin, Clock, DollarSign, Building } from 'lucide-react';
+import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building } from 'lucide-react';
 
 const Page = () => {
     const [userDetails, setUserDetails] = useState(null);
     const [appliedJobs, setAppliedJobs] = useState([]);
     const [recommendedJobs, setRecommendedJobs] = useState([]);
     const [allJobs, setAllJobs] = useState([]);
-    const [userId, setUserId] = useState(null);
+    // const [userId, setUserId] = useState(null);
     const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(true);
+    const [authError, setAuthError] = useState(null);
 
-    // Fixed getUserId function with proper error handling
-    const getUserId = () => {
-        if (typeof window === 'undefined') return null;
-        
-        const token = localStorage.getItem('authToken');
-        if (!token) return null;
 
-        try {
-            const payloadBase64 = token.split('.')[1];
-            const decoded = JSON.parse(atob(payloadBase64));
-            console.log('Decoded JWT:', decoded.UserId);
-            return decoded.UserId;
-        } catch (err) {
-            console.error('Invalid token', err);
-            return null;
+    useEffect(() => {
+        const userId = localStorage.getItem("userId")
+        // User authentication check
+        if (!userId) {
+            // Redirect to login if no valid token
+            window.location.href = '/auth/login';
+            setAuthError("Unauthorised User!")
+            return;
         }
-    };
+
+        console.log(userId)
+    }, [])
+
+
 
     // Simplified and improved getUserPreferences function
     const getUserPreferences = () => {
         if (typeof window === 'undefined') return ['Engineering'];
-        
+
         try {
             const prefs = localStorage.getItem('prefrence');
             console.log("Raw preferences from localStorage:", prefs);
-            
+
             if (prefs) {
-                const userPrefs = prefs.includes(',') 
+                const userPrefs = prefs.includes(',')
                     ? prefs.split(',').map(p => p.trim()).filter(p => p.length > 0)
                     : [prefs.trim()];
-                
+
                 console.log("Processed preferences:", userPrefs);
                 return userPrefs.length > 0 ? userPrefs : ['Engineering'];
             }
-            
+
             return ['Engineering'];
         } catch (error) {
             console.error('Error getting preferences:', error);
@@ -59,17 +58,17 @@ const Page = () => {
         console.log('=== RECOMMENDATION DEBUG START ===');
         console.log('Input jobs count:', jobs?.length || 0);
         console.log('User preferences:', preferences);
-        
+
         if (!jobs || jobs.length === 0) {
             console.log('No jobs to filter');
             return [];
         }
-        
+
         if (!preferences || preferences.length === 0) {
             console.log('No preferences to filter by');
             return jobs.slice(0, 10);
         }
-        
+
         const filtered = jobs.filter(job => {
             const jobTexts = [
                 job.title,
@@ -82,20 +81,20 @@ const Page = () => {
                 job.requirements,
                 job.tags
             ].filter(text => text)
-             .join(' ')
-             .toLowerCase();
-            
+                .join(' ')
+                .toLowerCase();
+
             console.log(`\nChecking job: "${job.title}"`);
             console.log('Job search text:', jobTexts.substring(0, 100) + '...');
-            
+
             const matches = preferences.some(pref => {
                 const prefLower = pref.toLowerCase();
-                
+
                 if (jobTexts.includes(prefLower)) {
                     console.log(`✅ Direct match found for: ${pref}`);
                     return true;
                 }
-                
+
                 const keywordMappings = {
                     'engineering': ['engineer', 'engineering', 'technical', 'software', 'hardware'],
                     'developer': ['developer', 'development', 'coding', 'programming', 'frontend', 'backend', 'fullstack', 'full-stack'],
@@ -104,25 +103,25 @@ const Page = () => {
                     'product': ['product', 'product manager', 'product owner', 'pm'],
                     'data': ['data', 'analyst', 'data science', 'data scientist', 'analytics', 'business intelligence']
                 };
-                
+
                 const keywords = keywordMappings[prefLower] || [prefLower];
                 const keywordMatch = keywords.some(keyword => jobTexts.includes(keyword));
-                
+
                 if (keywordMatch) {
                     console.log(`✅ Keyword match found for: ${pref} (matched: ${keywords.find(k => jobTexts.includes(k))})`);
                     return true;
                 }
-                
+
                 return false;
             });
-            
+
             console.log(`Result: ${matches ? 'MATCH' : 'NO MATCH'}`);
             return matches;
         });
-        
+
         console.log('=== RECOMMENDATION DEBUG END ===');
         console.log(`Filtered ${filtered.length} jobs from ${jobs.length} total jobs`);
-        
+
         return filtered;
     };
 
@@ -149,9 +148,21 @@ const Page = () => {
         });
     };
 
+    // Function to redirect to login page
+    const redirectToLogin = () => {
+        // Clear any stored tokens
+        localStorage.clear();
+
+        // Redirect to login page 
+        if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+        }
+    };
+
+
     useEffect(() => {
-        const currentUserId = getUserId();
-        setUserId(currentUserId);
+        const currentUserId = localStorage.getItem("userId");
+        // setUserId(currentUserId);
         console.log("User ID:", currentUserId);
 
         const fetchData = async () => {
@@ -159,18 +170,24 @@ const Page = () => {
 
             try {
                 if (!currentUserId) {
-                    console.error('No user ID found');
-                    setLoading(false);
+                    window.location.href = '/auth/login';
+                    console.error("No UserId Found!")
                     return;
                 }
 
-                // Fetch user details
+                // Fetch user details first to verify role
                 const userResponse = await fetch(`http://localhost:4441/api/auth/${currentUserId}`);
                 if (!userResponse.ok) {
+                    if (userResponse.status === 401 || userResponse.status === 403) {
+                        setAuthError('Session expired or unauthorized');
+                        setTimeout(redirectToLogin, 2000);
+                        return;
+                    }
                     throw new Error(`User API error: ${userResponse.status} ${userResponse.statusText}`);
                 }
-                const userDetails = await safeJsonParse(userResponse);
-                setUserDetails(userDetails);
+
+                const userDetailsData = await safeJsonParse(userResponse);
+                setUserDetails(userDetailsData);
 
                 // Fetch applied jobs
                 const jobsResponse = await fetch(`http://localhost:4441/api/auth/${currentUserId}/applications`);
@@ -179,7 +196,7 @@ const Page = () => {
                 }
                 const appliedJobsData = await safeJsonParse(jobsResponse);
                 console.log('Raw applied jobs response:', appliedJobsData);
-                
+
                 let appliedJobsArray = [];
                 if (Array.isArray(appliedJobsData)) {
                     appliedJobsArray = appliedJobsData;
@@ -193,9 +210,9 @@ const Page = () => {
                         appliedJobsArray = possibleArrays[0];
                     }
                 }
-                
+
                 console.log('Processed applied jobs array:', appliedJobsArray);
-                
+
                 // Sort applied jobs by date - fresh first
                 const sortedAppliedJobs = sortJobsByDate(appliedJobsArray, 'applicationDetails.appliedAt');
                 setAppliedJobs(sortedAppliedJobs);
@@ -207,7 +224,7 @@ const Page = () => {
                 }
                 const allJobsResponseData = await safeJsonParse(allJobsResponse);
                 console.log('Raw all jobs response:', allJobsResponseData);
-                
+
                 let allJobsArray = [];
                 if (Array.isArray(allJobsResponseData)) {
                     allJobsArray = allJobsResponseData;
@@ -221,29 +238,34 @@ const Page = () => {
                         allJobsArray = possibleArrays[0];
                     }
                 }
-                
+
                 console.log('Processed all jobs array:', allJobsArray);
                 setAllJobs(allJobsArray);
 
                 const preferences = getUserPreferences();
                 console.log('User preferences for recommendation:', preferences);
-                
+
                 const appliedJobIds = appliedJobsArray.map(job => job._id || job.id || job.jobId);
-                const availableJobs = allJobsArray.filter(job => 
+                const availableJobs = allJobsArray.filter(job =>
                     !appliedJobIds.includes(job._id || job.id)
                 );
-                
+
                 console.log('Available jobs (not applied):', availableJobs.length);
-                
+
                 const recommended = getRecommendedJobs(availableJobs, preferences);
                 console.log('Final recommended jobs:', recommended.length);
-                
+
                 // Sort recommended jobs by date - fresh first
                 const sortedRecommendedJobs = sortJobsByDate(recommended, 'datePosted');
                 setRecommendedJobs(sortedRecommendedJobs);
 
             } catch (error) {
                 console.error('Error fetching data:', error);
+                // If there's a network error or server error, still check auth status
+                if (error.message.includes('401') || error.message.includes('403')) {
+                    setAuthError('Session expired or unauthorized');
+                    setTimeout(redirectToLogin, 2000);
+                }
             } finally {
                 setLoading(false);
             }
@@ -251,27 +273,6 @@ const Page = () => {
 
         fetchData();
     }, []);
-
-    const getStatusColor = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'under review': 
-            case 'pending': 
-                return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'interview scheduled': 
-                return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'rejected': 
-                return 'bg-red-100 text-red-800 border-red-200';
-            case 'accepted': 
-            case 'hired':
-                return 'bg-green-100 text-green-800 border-green-200';
-            case 'open':
-                return 'bg-green-100 text-green-800 border-green-200';
-            case 'closed':
-                return 'bg-red-100 text-red-800 border-red-200';
-            default: 
-                return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
-    };
 
     const formatDate = (dateString) => {
         if (!dateString) return 'Date not available';
@@ -287,24 +288,36 @@ const Page = () => {
         return job?.jobStatus?.toLowerCase() === 'closed';
     };
 
+    // Loading state
     if (loading) {
         return (
-            <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
-                <div className="flex items-center justify-center min-h-screen">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#1c398e' }}></div>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p className="text-blue-600 font-medium">Loading User Dashboard...</p>
                 </div>
             </div>
         );
     }
 
-    if (!userId || !userDetails) {
+    // Authentication error state
+    if (authError || (userDetails && userDetails.role !== 'User')) {
         return (
-            <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
-                <div className="flex items-center justify-center min-h-screen">
-                    <div className="text-center">
-                        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Authentication Required</h2>
-                        <p className="text-gray-600">Please log in to access your dashboard.</p>
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+                <div className="text-center bg-white p-8 rounded-lg shadow-lg max-w-md mx-4">
+                    <div className="mb-4">
+                        <User className="h-12 w-12 text-red-600 mx-auto" />
                     </div>
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+                    <p className="text-gray-600 mb-4">
+                        {authError || 'You need to be logged in as a user to access this dashboard.'}
+                    </p>
+                    <button
+                        onClick={redirectToLogin}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Go to Login
+                    </button>
                 </div>
             </div>
         );
@@ -317,9 +330,15 @@ const Page = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                            <button
+                                onClick={() => window.location.href = "/jobs-landing"}
+                                className="p-1 sm:p-3 hover:bg-blue-500 rounded-xl transition-colors"
+                            >
+                                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white-700" />
+                            </button>
+                            {/* <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
                                 <User className="h-6 w-6 text-white" />
-                            </div>
+                            </div> */}
                             <div>
                                 <h1 className="text-2xl font-bold text-white">Welcome back, {userDetails?.name}</h1>
                                 <p className="text-blue-200">{userDetails?.role || 'Job Seeker'}</p>
@@ -348,8 +367,8 @@ const Page = () => {
                                 key={id}
                                 onClick={() => setActiveTab(id)}
                                 className={`flex items-center space-x-2 px-4 py-3 rounded-md font-medium text-sm transition-all duration-200 flex-1 justify-center ${activeTab === id
-                                        ? 'text-white shadow-md'
-                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                    ? 'text-white shadow-md'
+                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                     }`}
                                 style={activeTab === id ? { backgroundColor: '#1c398e' } : {}}
                             >
@@ -371,7 +390,7 @@ const Page = () => {
                                 <h2 className="text-2xl font-bold text-white">Profile Information</h2>
                                 <p className="text-blue-100 mt-1">Manage your personal details and preferences</p>
                             </div>
-                            
+
                             <div className="p-8">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                     <div className="lg:col-span-2 space-y-6">
@@ -395,7 +414,7 @@ const Page = () => {
                                                 </label>
                                                 <p className="text-gray-900 font-medium">{userDetails?.email}</p>
                                             </div>
-                                            
+
                                             <div className="p-4 border border-gray-200 rounded-xl">
                                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                                                     Role
@@ -410,7 +429,7 @@ const Page = () => {
                                             <h4 className="text-lg font-semibold text-gray-900 mb-4">Job Preferences</h4>
                                             <div className="space-y-3">
                                                 {getUserPreferences().map((pref, index) => (
-                                                    <div 
+                                                    <div
                                                         key={index}
                                                         className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
                                                     >
@@ -447,7 +466,7 @@ const Page = () => {
                                 Total Applications: <span className="font-semibold text-gray-900">{appliedJobs.length}</span>
                             </div>
                         </div>
-                        
+
                         {appliedJobs.length > 0 ? (
                             <div className="grid gap-6">
                                 {appliedJobs.map((job, index) => (
@@ -466,11 +485,11 @@ const Page = () => {
                                                         {job.applicationDetails?.status || job.jobStatus || 'Pending'}
                                                     </span> */}
                                                 </div>
-                                                
+
                                                 <p className="text-gray-600 mb-4 line-clamp-2">
                                                     {job.jobDescription || 'No description available'}
                                                 </p>
-                                                
+
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                                     <div className="flex items-center space-x-2 text-gray-600">
                                                         <Building className="h-4 w-4 flex-shrink-0" />
@@ -489,7 +508,7 @@ const Page = () => {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {job.jobType && (
                                                     <div className="flex items-center space-x-2">
                                                         <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
@@ -507,7 +526,7 @@ const Page = () => {
                                 <Briefcase className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                                 <h3 className="text-xl font-semibold text-gray-600 mb-2">No Applications Yet</h3>
                                 <p className="text-gray-500 mb-6">Start exploring opportunities and apply to jobs that match your interests!</p>
-                                <button 
+                                <button
                                     onClick={() => setActiveTab('recommended')}
                                     className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90 transition-colors"
                                     style={{ backgroundColor: '#1c398e' }}
@@ -531,7 +550,7 @@ const Page = () => {
                                 Found: <span className="font-semibold text-gray-900">{recommendedJobs.length}</span> matches
                             </div>
                         </div>
-                        
+
                         {recommendedJobs.length > 0 ? (
                             <div className="grid gap-6">
                                 {recommendedJobs.map((job, index) => (
@@ -550,11 +569,11 @@ const Page = () => {
                                                         Recommended
                                                     </span>
                                                 </div>
-                                                
+
                                                 <p className="text-gray-600 mb-4 line-clamp-3">
                                                     {job.description || 'No description available'}
                                                 </p>
-                                                
+
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                                     <div className="flex items-center space-x-2 text-gray-600">
                                                         <Building className="h-4 w-4 flex-shrink-0" />
@@ -571,7 +590,7 @@ const Page = () => {
                                                         <span className="text-sm">Posted {formatDate(job.datePosted)}</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="flex flex-wrap gap-2">
                                                     {job.jobType && (
                                                         <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
@@ -585,7 +604,7 @@ const Page = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            
+
                                             {/* Conditional Apply Button or Closed Status */}
                                             <div className="mt-4 lg:mt-0 lg:ml-6 flex-shrink-0">
                                                 {isJobClosed(job) ? (
@@ -596,9 +615,7 @@ const Page = () => {
                                                     <button
                                                         className="w-full lg:w-auto px-6 py-3 text-white font-medium rounded-lg hover:opacity-90 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
                                                         style={{ backgroundColor: '#1c398e' }}
-                                                        onClick={() => {
-                                                            console.log('Applying to job:', job);
-                                                        }}
+                                                        onClick={() => window.location.href = `/jobs-landing/${job._id}`}
                                                     >
                                                         Apply Now
                                                     </button>
