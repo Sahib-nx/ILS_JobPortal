@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 
 // Constants
-const API_BASE_URL = "http://localhost:4441/api";
 const CATEGORIES = [
     { id: "all", name: "All Jobs", icon: Briefcase },
     { id: "engineering", name: "Engineering", icon: Zap },
@@ -22,7 +21,7 @@ const CATEGORIES = [
 const getJobTypeCategory = (jobType) => {
     if (!jobType) return 'other';
     const type = jobType.toLowerCase().trim();
-    
+
     if (type.includes('engineer')) return 'engineering';
     if (type.includes('design')) return 'design';
     if (type.includes('market')) return 'marketing';
@@ -33,6 +32,10 @@ const getJobTypeCategory = (jobType) => {
 
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
+};
+
+const isJobClosed = (job) => {
+    return job.jobStatus === 'closed' || job.jobStatus === 'close';
 };
 
 // Custom Hooks
@@ -46,7 +49,7 @@ const useJobs = () => {
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/job/`);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/`);
 
             if (!res.ok) {
                 const errorMap = {
@@ -59,17 +62,17 @@ const useJobs = () => {
             }
 
             const data = await res.json();
-            const sortedJobs = Array.isArray(data) 
+            const sortedJobs = Array.isArray(data)
                 ? data.sort((a, b) => new Date(b.datePosted) - new Date(a.datePosted))
                 : [];
             setJobs(sortedJobs);
         } catch (error) {
             console.error("Error fetching jobs:", error);
-            
+
             const errorType = error.name === 'TypeError' && error.message.includes('fetch')
                 ? { type: 'network_error', title: 'Connection Problem', message: 'Unable to connect to our servers. Please check your internet connection and try again.' }
                 : { type: 'unknown_error', title: 'Something Went Wrong', message: 'An unexpected error occurred while loading job listings. Please refresh the page.' };
-            
+
             setError(errorType);
         } finally {
             setLoading(false);
@@ -127,7 +130,7 @@ const Navigation = ({ isLoaded }) => {
         const token = localStorage.getItem('authToken');
         const role = localStorage.getItem('userRole');
 
-        
+
         setIsLoggedIn(!!token);
         setUserRole(role);
     }, []);
@@ -147,9 +150,8 @@ const Navigation = ({ isLoaded }) => {
     };
 
     return (
-        <nav className={`bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-50 transition-all duration-700 ${
-            isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-        }`}>
+        <nav className={`bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-50 transition-all duration-700 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+            }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center space-x-3">
@@ -166,9 +168,9 @@ const Navigation = ({ isLoaded }) => {
                         {console.log('Rendering buttons - isLoggedIn:', isLoggedIn, 'userRole:', userRole)}
                         {!isLoggedIn ? (
                             <button
-                                onClick={() => { 
+                                onClick={() => {
                                     console.log('Login button clicked');
-                                    window.location.href = 'auth/login'; 
+                                    window.location.href = 'auth/login';
                                 }}
                                 className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-3 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base">
                                 Login
@@ -185,18 +187,18 @@ const Navigation = ({ isLoaded }) => {
                                 <span>Dashboard</span>
                             </button>
                         )}
-                        
+
                         {userRole === 'User' && (
                             <button
-                                onClick={() => { 
+                                onClick={() => {
                                     console.log('Recruiter button clicked');
-                                    window.location.href = 'recruiter-form'; 
+                                    window.location.href = 'recruiter-form';
                                 }}
                                 className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-2 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base whitespace-nowrap">
                                 Recruiter
                             </button>
                         )}
-                        
+
                     </div>
                 </div>
             </div>
@@ -207,7 +209,7 @@ const Navigation = ({ isLoaded }) => {
 const LoadingSkeleton = () => (
     <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white">
         <Navigation isLoaded={false} />
-        
+
         <section className="relative py-20 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
                 <div className="animate-pulse space-y-6">
@@ -240,14 +242,12 @@ const LoadingSkeleton = () => (
 );
 
 const HeroSection = ({ isLoaded, searchTerm, setSearchTerm }) => (
-    <section className={`relative py-12 lg:py-20 px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
-        isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-    } overflow-hidden`}>
+    <section className={`relative py-12 lg:py-20 px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+        } overflow-hidden`}>
         <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-                <div className={`space-y-8 transition-all duration-1000 delay-200 ${
-                    isLoaded ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
-                }`}>
+                <div className={`space-y-8 transition-all duration-1000 delay-200 ${isLoaded ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
+                    }`}>
                     <div className="space-y-6">
                         <h1 className="text-2xl sm:text-2xl lg:text-5xl xl:text-5xl font-bold text-[#1c398e] leading-tight">
                             Welcome to ILS Job Portal
@@ -269,81 +269,82 @@ const HeroSection = ({ isLoaded, searchTerm, setSearchTerm }) => (
                                     className="w-full pl-12 pr-4 py-3 sm:py-4 text-[#1c398e] bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1c398e] focus:border-transparent transition-all duration-300 placeholder-blue-400 text-base"
                                 />
                             </div>
-                            <button className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold">
-                                <span>Search Jobs</span>
-                                <ArrowRight className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className={`relative transition-all duration-1000 delay-400 ${
-                    isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
-                } order-first lg:order-last`}>
-                    <div className="relative">
-                        <div className="absolute top-4 left-4 w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl opacity-80 animate-bounce delay-1000 flex items-center justify-center">
-                            <Star className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="absolute bottom-8 right-8 w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl opacity-70 animate-bounce delay-2000 flex items-center justify-center">
-                            <Briefcase className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="absolute top-1/3 -right-4 w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg opacity-60 animate-bounce delay-3000 flex items-center justify-center">
-                            <Search className="w-5 h-5 text-white" />
-                        </div>
-                        
-                        <img
-                            src="/ils_image.svg"
-                            alt="Professional team working together - Find your dream job"
-                            className="w-full h-48 sm:h-64 lg:h-80 object-cover rounded-2xl transition-all duration-500"
-                            onError={(e) => {
-                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiBmaWxsPSJ1cmwoI2dyYWRpZW50KSIvPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMxYzM5OGU7c3RvcC1vcGFjaXR5OjAuMSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojM2I4MmY2O3N0b3Atb3BhY2l0eTowLjIiIC8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxYzM5OGUiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9ImJvbGQiPkpvYiBTZWVrZXIgSW1hZ2U8L3RleHQ+Cjwvc3ZnPgo=';
-                            }}
-                        />
+                            <button
+                                onClick={() => window.scrollTo({
+                                    top: window.scrollY + 500,
+                                    behavior: 'smooth'
+                                })}
+                            className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold">
+                            <span>Search Jobs</span>
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <div className={`relative transition-all duration-1000 delay-400 ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
+                } order-first lg:order-last`}>
+                <div className="relative">
+                    <div className="absolute top-4 left-4 w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl opacity-80 animate-bounce delay-1000 flex items-center justify-center">
+                        <Star className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="absolute bottom-8 right-8 w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl opacity-70 animate-bounce delay-2000 flex items-center justify-center">
+                        <Briefcase className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="absolute top-1/3 -right-4 w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg opacity-60 animate-bounce delay-3000 flex items-center justify-center">
+                        <Search className="w-5 h-5 text-white" />
+                    </div>
+
+                    <img
+                        src="/ils_image.svg"
+                        alt="Professional team working together - Find your dream job"
+                        className="w-full h-48 sm:h-64 lg:h-80 object-cover rounded-2xl transition-all duration-500"
+                        onError={(e) => {
+                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiBmaWxsPSJ1cmwoI2dyYWRpZW50KSIvPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMxYzM5OGU7c3RvcC1vcGFjaXR5OjAuMSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojM2I4MmY2O3N0b3Atb3BhY2l0eTowLjIiIC8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxYzM5OGUiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9ImJvbGQiPkpvYiBTZWVrZXIgSW1hZ2U8L3RleHQ+Cjwvc3ZnPgo=';
+                        }}
+                    />
+                </div>
+            </div>
         </div>
-    </section>
+    </div>
+    </section >
 );
 
 const CategoryFilter = ({ categories, selectedCategory, setSelectedCategory, isLoaded }) => (
-    <div className={`mb-8 lg:mb-16 transition-all duration-1000 delay-500 ${
-        isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-    }`}>
+    <div className={`mb-8 lg:mb-16 transition-all duration-1000 delay-500 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+        }`}>
         <div className="flex items-center space-x-3 mb-6">
             <div className="w-8 h-8 bg-gradient-to-br from-[#1c398e] to-[#3b82f6] rounded-lg flex items-center justify-center">
                 <Search className="w-4 h-4 text-white" />
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-[#1c398e]">Browse by Category</h2>
         </div>
-        
+
         <div className="overflow-x-auto pb-4 lg:pb-0">
             <div className="flex lg:flex-wrap gap-3 min-w-max lg:min-w-0">
                 {categories.map((category, index) => (
                     <button
                         key={category.id}
                         onClick={() => setSelectedCategory(category.id)}
-                        className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap ${
-                            selectedCategory === category.id
+                        className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap ${selectedCategory === category.id
                                 ? 'bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white shadow-lg'
                                 : 'bg-white/80 text-blue-600 hover:bg-white border border-blue-200 hover:shadow-md'
-                        }`}
+                            }`}
                         style={{ animationDelay: `${index * 100}ms` }}
                     >
                         <category.icon className="w-4 h-4" />
                         <span className="font-medium">{category.name}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            selectedCategory === category.id
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedCategory === category.id
                                 ? 'bg-white/20 text-white'
                                 : 'bg-blue-100 text-blue-600'
-                        }`}>
+                            }`}>
                             {category.count}
                         </span>
                     </button>
                 ))}
             </div>
         </div>
-        
+
         <div className="lg:hidden text-center mt-2">
             <div className="text-xs text-blue-400 flex items-center justify-center space-x-1">
                 <span>Swipe to see more categories</span>
@@ -355,7 +356,7 @@ const CategoryFilter = ({ categories, selectedCategory, setSelectedCategory, isL
 
 const JobCard = ({ job, index, featured = false }) => (
     <div
-        className={`group bg-white/80 backdrop-blur-lg rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:bg-white/90 cursor-pointer transform`}
+        className={`group bg-white/80 backdrop-blur-lg rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:bg-white/90 cursor-pointer transform ${isJobClosed(job) ? 'opacity-50 grayscale' : ''}`}
         style={{ animationDelay: `${index * 150}ms` }}
     >
         {featured && (
@@ -399,14 +400,14 @@ const JobCard = ({ job, index, featured = false }) => (
             )}
         </div>
 
-        {job.jobStatus === 'closed' || job.jobStatus === 'close' ? (
+        {isJobClosed(job) ? (
             <div className="w-full bg-gray-400 text-white py-3 rounded-xl font-semibold text-center cursor-not-allowed">
                 Closed
             </div>
         ) : (
-            <button 
-            onClick={() => window.location.href = `/jobs-landing/${job._id}`}
-            className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white py-3 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 font-semibold">
+            <button
+                onClick={() => window.location.href = `/jobs-landing/${job._id}`}
+                className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white py-3 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 font-semibold">
                 See Details
             </button>
         )}
@@ -415,7 +416,7 @@ const JobCard = ({ job, index, featured = false }) => (
 
 const JobListCard = ({ job, index }) => (
     <div
-        className="group bg-white/80 backdrop-blur-lg rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:bg-white/90 cursor-pointer"
+        className={`group bg-white/80 backdrop-blur-lg rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:bg-white/90 cursor-pointer ${isJobClosed(job) ? 'opacity-50 grayscale' : ''}`}
         style={{ animationDelay: `${index * 100}ms` }}
     >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -456,14 +457,14 @@ const JobListCard = ({ job, index }) => (
             </div>
 
             <div className="flex items-center space-x-3 mt-4 lg:mt-0">
-                {job.jobStatus === 'closed' || job.jobStatus === 'close' ? (
+                {isJobClosed(job) ? (
                     <div className="bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold cursor-not-allowed">
                         Closed
                     </div>
                 ) : (
-                    <button 
-                     onClick={() => window.location.href = `/jobs-landing/${job._id}`}
-                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 font-semibold flex items-center space-x-2">
+                    <button
+                        onClick={() => window.location.href = `/jobs-landing/${job._id}`}
+                        className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 font-semibold flex items-center space-x-2">
                         <span>See Details</span>
                         <ChevronRight className="w-4 h-4" />
                     </button>
@@ -472,7 +473,6 @@ const JobListCard = ({ job, index }) => (
         </div>
     </div>
 );
-
 const ErrorState = ({ error, onRetry }) => (
     <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-12 shadow-lg border border-white/50 text-center">
         <div className="max-w-md mx-auto">
@@ -525,18 +525,18 @@ const JobSeekersLanding = () => {
         }
     }, [loading]);
 
-    const categoriesWithCounts = useMemo(() => 
+    const categoriesWithCounts = useMemo(() =>
         CATEGORIES.map(category => ({
             ...category,
-            count: category.id === 'all' 
-                ? jobs.length 
+            count: category.id === 'all'
+                ? jobs.length
                 : jobs.filter(job => getJobTypeCategory(job.jobType) === category.id).length
         }))
-    , [jobs]);
+        , [jobs]);
 
-    const featuredJobs = useMemo(() => 
+    const featuredJobs = useMemo(() =>
         jobs.filter(job => job.featured)
-    , [jobs]);
+        , [jobs]);
 
     if (loading) {
         return <LoadingSkeleton />;
@@ -545,8 +545,8 @@ const JobSeekersLanding = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white pb-16">
             <Navigation isLoaded={isLoaded} />
-            
-            <HeroSection 
+
+            <HeroSection
                 isLoaded={isLoaded}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
@@ -563,9 +563,8 @@ const JobSeekersLanding = () => {
                 )}
 
                 {!error && featuredJobs.length > 0 && (
-                    <section className={`mb-16 transition-all duration-1000 delay-300 ${
-                        isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-                    }`}>
+                    <section className={`mb-16 transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+                        }`}>
                         <div className="flex items-center space-x-3 mb-8">
                             <div className="w-8 h-8 bg-gradient-to-br from-[#1c398e] to-[#3b82f6] rounded-lg flex items-center justify-center">
                                 <Star className="w-4 h-4 text-white" />
@@ -581,17 +580,16 @@ const JobSeekersLanding = () => {
                     </section>
                 )}
 
-                <section className={`transition-all duration-1000 delay-700 ${
-                    isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-                }`}>
+                <section className={`transition-all duration-1000 delay-700 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+                    }`}>
                     {error ? (
                         <ErrorState error={error} onRetry={refetch} />
                     ) : (
                         <>
                             <div className="flex items-center justify-between mb-8">
                                 <h2 className="text-xl sm:text-2xl font-bold text-[#1c398e]">
-                                    {selectedCategory === 'all' 
-                                        ? 'All Jobs' 
+                                    {selectedCategory === 'all'
+                                        ? 'All Jobs'
                                         : `${categoriesWithCounts.find(c => c.id === selectedCategory)?.name} Jobs`
                                     }
                                     <span className="text-blue-600 font-normal"> ({filteredJobs.length} jobs)</span>

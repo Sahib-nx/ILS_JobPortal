@@ -114,7 +114,7 @@ const JobDetailPage = ({ jobId }) => {
     const fetchJobDetails = async () => {
       setIsLoading(true);
       try {
-        const jobResponse = await fetch(`http://localhost:4441/api/job/${jobId}`);
+        const jobResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${jobId}`);
         if (!jobResponse.ok) {
           throw new Error("Failed to fetch job details");
         }
@@ -154,7 +154,7 @@ const JobDetailPage = ({ jobId }) => {
         formData.append('resume', applicationData.resume);
       }
 
-      const response = await fetch(`http://localhost:4441/api/job/${jobId}/apply/${user.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${jobId}/apply/${user.id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`

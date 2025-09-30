@@ -1,25 +1,21 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building } from 'lucide-react';
+import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building, Edit } from 'lucide-react';
 
 const Page = () => {
     const [userDetails, setUserDetails] = useState(null);
     const [appliedJobs, setAppliedJobs] = useState([]);
     const [recommendedJobs, setRecommendedJobs] = useState([]);
     const [allJobs, setAllJobs] = useState([]);
-    // const [userId, setUserId] = useState(null);
-    const [activeTab, setActiveTab] = useState('profile');
+    const [activeTab, setActiveTab] = useState('recommended');
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState(null);
 
 
     useEffect(() => {
         const userId = localStorage.getItem("userId")
-        // User authentication check
         if (!userId) {
-            // Redirect to login if no valid token
-            window.location.href = '/auth/login';
             setAuthError("Unauthorised User!")
             return;
         }
@@ -27,9 +23,6 @@ const Page = () => {
         console.log(userId)
     }, [])
 
-
-
-    // Simplified and improved getUserPreferences function
     const getUserPreferences = () => {
         if (typeof window === 'undefined') return ['Engineering'];
 
@@ -53,7 +46,6 @@ const Page = () => {
         }
     };
 
-    // Updated getRecommendedJobs function to handle new API structure
     const getRecommendedJobs = (jobs, preferences) => {
         console.log('=== RECOMMENDATION DEBUG START ===');
         console.log('Input jobs count:', jobs?.length || 0);
@@ -125,7 +117,6 @@ const Page = () => {
         return filtered;
     };
 
-    // Helper function to safely parse JSON response
     const safeJsonParse = async (response) => {
         const text = await response.text();
         if (!text) {
@@ -139,21 +130,17 @@ const Page = () => {
         }
     };
 
-    // Sort jobs by date - fresh first (descending order)
     const sortJobsByDate = (jobs, dateField = 'datePosted') => {
         return [...jobs].sort((a, b) => {
             const dateA = new Date(a[dateField] || a.applicationDetails?.appliedAt || 0);
             const dateB = new Date(b[dateField] || b.applicationDetails?.appliedAt || 0);
-            return dateB - dateA; // Descending order (fresh first)
+            return dateB - dateA;
         });
     };
 
-    // Function to redirect to login page
     const redirectToLogin = () => {
-        // Clear any stored tokens
         localStorage.clear();
 
-        // Redirect to login page 
         if (typeof window !== 'undefined') {
             window.location.href = '/auth/login';
         }
@@ -162,21 +149,22 @@ const Page = () => {
 
     useEffect(() => {
         const currentUserId = localStorage.getItem("userId");
-        // setUserId(currentUserId);
+        const authToken = localStorage.getItem("authToken");
         console.log("User ID:", currentUserId);
 
         const fetchData = async () => {
             setLoading(true);
 
             try {
-                if (!currentUserId) {
-                    window.location.href = '/auth/login';
-                    console.error("No UserId Found!")
-                    return;
-                }
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                };
 
-                // Fetch user details first to verify role
-                const userResponse = await fetch(`http://localhost:4441/api/auth/${currentUserId}`);
+                const userResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${currentUserId}`, {
+                    headers: headers
+                });
+
                 if (!userResponse.ok) {
                     if (userResponse.status === 401 || userResponse.status === 403) {
                         setAuthError('Session expired or unauthorized');
@@ -189,8 +177,10 @@ const Page = () => {
                 const userDetailsData = await safeJsonParse(userResponse);
                 setUserDetails(userDetailsData);
 
-                // Fetch applied jobs
-                const jobsResponse = await fetch(`http://localhost:4441/api/auth/${currentUserId}/applications`);
+                const jobsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${currentUserId}/applications`, {
+                    headers: headers
+                });
+
                 if (!jobsResponse.ok) {
                     throw new Error(`Applications API error: ${jobsResponse.status} ${jobsResponse.statusText}`);
                 }
@@ -213,12 +203,13 @@ const Page = () => {
 
                 console.log('Processed applied jobs array:', appliedJobsArray);
 
-                // Sort applied jobs by date - fresh first
                 const sortedAppliedJobs = sortJobsByDate(appliedJobsArray, 'applicationDetails.appliedAt');
                 setAppliedJobs(sortedAppliedJobs);
 
-                // Fetch all available jobs for recommendations
-                const allJobsResponse = await fetch(`http://localhost:4441/api/job/`);
+                const allJobsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/`, {
+                    headers: headers
+                });
+
                 if (!allJobsResponse.ok) {
                     throw new Error(`Jobs API error: ${allJobsResponse.status} ${allJobsResponse.statusText}`);
                 }
@@ -255,13 +246,11 @@ const Page = () => {
                 const recommended = getRecommendedJobs(availableJobs, preferences);
                 console.log('Final recommended jobs:', recommended.length);
 
-                // Sort recommended jobs by date - fresh first
                 const sortedRecommendedJobs = sortJobsByDate(recommended, 'datePosted');
                 setRecommendedJobs(sortedRecommendedJobs);
 
             } catch (error) {
                 console.error('Error fetching data:', error);
-                // If there's a network error or server error, still check auth status
                 if (error.message.includes('401') || error.message.includes('403')) {
                     setAuthError('Session expired or unauthorized');
                     setTimeout(redirectToLogin, 2000);
@@ -283,12 +272,10 @@ const Page = () => {
         });
     };
 
-    // Check if job is closed
     const isJobClosed = (job) => {
         return job?.jobStatus?.toLowerCase() === 'closed';
     };
 
-    // Loading state
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -300,7 +287,6 @@ const Page = () => {
         );
     }
 
-    // Authentication error state
     if (authError || (userDetails && userDetails.role !== 'User')) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
@@ -325,7 +311,6 @@ const Page = () => {
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
-            {/* Header */}
             <header className="shadow-lg" style={{ backgroundColor: '#1c398e' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center justify-between">
@@ -336,9 +321,6 @@ const Page = () => {
                             >
                                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white-700" />
                             </button>
-                            {/* <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-                                <User className="h-6 w-6 text-white" />
-                            </div> */}
                             <div>
                                 <h1 className="text-2xl font-bold text-white">Welcome back, {userDetails?.name}</h1>
                                 <p className="text-blue-200">{userDetails?.role || 'Job Seeker'}</p>
@@ -354,7 +336,6 @@ const Page = () => {
                 </div>
             </header>
 
-            {/* Navigation Tabs */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
                 <div className="bg-white rounded-lg shadow-sm p-1 mb-8">
                     <nav className="flex space-x-1">
@@ -380,15 +361,26 @@ const Page = () => {
                 </div>
             </div>
 
-            {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 {/* Profile Tab */}
                 {activeTab === 'profile' && (
                     <div className="animate-fade-in">
                         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                             <div className="px-8 py-6" style={{ backgroundColor: '#1c398e' }}>
-                                <h2 className="text-2xl font-bold text-white">Profile Information</h2>
-                                <p className="text-blue-100 mt-1">Manage your personal details and preferences</p>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-white">Profile Information</h2>
+                                        <p className="text-blue-100 mt-1">Manage your personal details and preferences</p>
+                                    </div>
+                                    <button
+                                        onClick={() => window.location.href = '/user/edit'}
+                                        className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 shadow-sm hover:shadow-md"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Edit Profile</span>
+                                        <span className="sm:hidden">Edit</span>
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="p-8">
@@ -481,9 +473,6 @@ const Page = () => {
                                                     <h3 className="text-xl font-bold text-gray-900">
                                                         {job.jobTitle || 'Job Title'}
                                                     </h3>
-                                                    {/* <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ml-4 ${getStatusColor(job.applicationDetails?.status || job.jobStatus)}`}>
-                                                        {job.applicationDetails?.status || job.jobStatus || 'Pending'}
-                                                    </span> */}
                                                 </div>
 
                                                 <p className="text-gray-600 mb-4 line-clamp-2">
@@ -538,7 +527,7 @@ const Page = () => {
                     </div>
                 )}
 
-                {/* Recommended Jobs Tab */}
+ {/* Recommended Jobs Tab */}
                 {activeTab === 'recommended' && (
                     <div className="animate-fade-in">
                         <div className="flex items-center justify-between mb-8">
@@ -556,7 +545,7 @@ const Page = () => {
                                 {recommendedJobs.map((job, index) => (
                                     <div
                                         key={job._id || index}
-                                        className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
+                                        className={`bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 ${isJobClosed(job) ? 'opacity-50 grayscale' : ''}`}
                                         style={{ animationDelay: `${index * 100}ms` }}
                                     >
                                         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
@@ -605,7 +594,6 @@ const Page = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Conditional Apply Button or Closed Status */}
                                             <div className="mt-4 lg:mt-0 lg:ml-6 flex-shrink-0">
                                                 {isJobClosed(job) ? (
                                                     <div className="w-full lg:w-auto px-6 py-3 text-red-600 font-medium rounded-lg border-2 border-red-200 bg-red-50 text-center">
@@ -617,7 +605,7 @@ const Page = () => {
                                                         style={{ backgroundColor: '#1c398e' }}
                                                         onClick={() => window.location.href = `/jobs-landing/${job._id}`}
                                                     >
-                                                        Apply Now
+                                                        See Details
                                                     </button>
                                                 )}
                                             </div>

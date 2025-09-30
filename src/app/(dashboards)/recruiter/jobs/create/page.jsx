@@ -36,11 +36,11 @@ const Page = () => {
                 jobType: formData.jobType
             };
 
-            const response = await fetch('http://localhost:4441/api/job/', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}` 
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                 },
                 body: JSON.stringify(jobData)
             });
@@ -49,7 +49,7 @@ const Page = () => {
                 const result = await response.json();
                 setSuccess(true);
                 setTimeout(() => {
-                    window.location.href =`/recruiter`;
+                    window.location.href = `/recruiter`;
                 }, 2000);
             } else {
                 const errorData = await response.json();

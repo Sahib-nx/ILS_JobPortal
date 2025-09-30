@@ -64,7 +64,7 @@ const RegisterPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4441/api/auth/register', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,9 +88,11 @@ const RegisterPage = () => {
 
         // Store data in localStorage - Fix the property access
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('preference', data.user.prefrence);
+        localStorage.setItem('prefrence', data.user.prefrence);
         localStorage.setItem('userRole', data.user.role);
         localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('name', data.user.name);
+
         setSuccess(true);
 
         // Role-based navigation

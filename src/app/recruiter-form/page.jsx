@@ -151,7 +151,7 @@ const CompanyRegistrationForm = () => {
 
       console.log('Request body:', requestBody);
 
-      const response = await fetch(`http://localhost:4441/api/recruiter/submit/${userId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/recruiter/submit/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

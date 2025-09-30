@@ -120,7 +120,7 @@ const RecruiterDashboard = () => {
         setError("No authentication token found")
       }
 
-      const jobsResponse = await fetch('http://localhost:4441/api/job/', {
+      const jobsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -221,28 +221,6 @@ const RecruiterDashboard = () => {
     );
   }
 
-  // // Error state
-  // if (error) {
-  //   return (
-  //     <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white flex items-center justify-center">
-  //       <div className="text-center max-w-md mx-auto p-6">
-  //         <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-  //         <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Dashboard</h2>
-  //         <p className="text-red-500 mb-6">{error}</p>
-  //         <button
-  //           onClick={fetchRecruiterData}
-  //           className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 py-3 rounded-xl hover:shadow-xl transition-all duration-300 font-semibold"
-  //         >
-  //           Try Again
-  //         </button>
-  //         {error.includes('Authentication') && (
-  //           <p className="text-sm text-gray-600 mt-4">Redirecting to login...</p>
-  //         )}
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
   // Authentication error state
   if (error || localStorage.getItem("userRole") !== "Recruiter") {
     return (
@@ -276,7 +254,7 @@ const RecruiterDashboard = () => {
             <div className="flex items-center justify-between h-16 gap-4">
               <div className="flex items-center space-x-3 flex-shrink-0">
                 <button
-                  onClick={() => window.history.back()}
+                  onClick={() => window.location.href = "/"}
                   className="p-1 sm:p-3 hover:bg-gray-100 rounded-xl transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
@@ -285,8 +263,8 @@ const RecruiterDashboard = () => {
                   ILS
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-xl font-bold text-[#1c398e]">Recruiter Panel</h1>
-                  <p className="text-xs text-blue-600">Job Management</p>
+                  <h1 className="text-xl font-bold text-[#1c398e]">Recruiter Dasboard</h1>
+                  <p className="text-xs text-blue-600">Welcome {localStorage.getItem("name")}</p>
                 </div>
               </div>
 

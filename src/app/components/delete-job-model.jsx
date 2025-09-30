@@ -16,7 +16,7 @@ export const DeleteJobModal = ({ isOpen, onClose, jobId, jobTitle, onDeleteSucce
     setError('');
 
     try {
-      const response = await fetch(`http://localhost:4441/api/job/${jobId}/delete`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/${jobId}/delete`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`

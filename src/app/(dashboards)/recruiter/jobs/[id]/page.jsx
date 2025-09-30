@@ -28,7 +28,7 @@ const Page = () => {
       try {
         const userId = getUserId();
 
-        const response = await fetch(`http://localhost:4441/api/job/${jobId}/applications?userId=${userId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${jobId}/applications?userId=${userId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`
           }
@@ -66,11 +66,11 @@ const Page = () => {
 
       switch (currentStatus) {
         case 'pending':
-          endpoint = `http://localhost:4441/api/email/${jobId}/${applicantId}`;
+          endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/api/email/${jobId}/${applicantId}`;
           newStatus = 'shortlisted';
           break;
         case 'shortlisted':
-          endpoint = `http://localhost:4441/api/email/Hired/${jobId}/${applicantId}`;
+          endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/api/email/Hired/${jobId}/${applicantId}`;
           newStatus = 'hired';
           break;
         case 'hired':
@@ -95,8 +95,8 @@ const Page = () => {
       }
 
       // Update the applications state
-      setApplications(prev => prev.map(app => 
-        app._id === applicationId 
+      setApplications(prev => prev.map(app =>
+        app._id === applicationId
           ? { ...app, status: newStatus }
           : app
       ));
@@ -322,13 +322,12 @@ const Page = () => {
                             application.createdAt ? new Date(application.createdAt).toLocaleDateString() : 'Recently'}
                         </div>
                         {application.status && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            application.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            application.status === 'shortlisted' ? 'bg-blue-100 text-blue-700' :
-                            application.status === 'hired' ? 'bg-purple-100 text-purple-700' :
-                            application.status === 'joined' ? 'bg-green-100 text-green-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${application.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                              application.status === 'shortlisted' ? 'bg-blue-100 text-blue-700' :
+                                application.status === 'hired' ? 'bg-purple-100 text-purple-700' :
+                                  application.status === 'joined' ? 'bg-green-100 text-green-700' :
+                                    'bg-gray-100 text-gray-700'
+                            }`}>
                             {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                           </span>
                         )}
@@ -348,14 +347,13 @@ const Page = () => {
 
                       <button
                         onClick={() => !buttonConfig.disabled && !isActionLoading && handleStatusAction(
-                          application._id, 
-                          application.applicantId?._id, 
+                          application._id,
+                          application.applicantId?._id,
                           application.status || 'pending'
                         )}
                         disabled={buttonConfig.disabled || isActionLoading}
-                        className={`${buttonConfig.className} text-white px-4 py-2 rounded-lg transition-all duration-300 font-medium flex items-center space-x-2 text-sm ${
-                          !buttonConfig.disabled && !isActionLoading ? 'hover:shadow-lg transform hover:-translate-y-0.5' : ''
-                        }`}
+                        className={`${buttonConfig.className} text-white px-4 py-2 rounded-lg transition-all duration-300 font-medium flex items-center space-x-2 text-sm ${!buttonConfig.disabled && !isActionLoading ? 'hover:shadow-lg transform hover:-translate-y-0.5' : ''
+                          }`}
                       >
                         {isActionLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -425,7 +423,7 @@ const Page = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="flex-1 overflow-hidden bg-gray-50 relative">
               {!resumeViewerError ? (
                 <>
@@ -527,7 +525,7 @@ const Page = () => {
               )}
             </div>
           </div>
-          
+
           <style jsx>{`
             @keyframes fadeOut {
               0% { opacity: 1; }

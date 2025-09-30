@@ -42,7 +42,7 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:4441/api/auth/', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,9 +58,10 @@ const LoginPage = () => {
       if (data.success) {
 
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('preference', data.user.prefrence);
+        localStorage.setItem('prefrence', data.user.prefrence);
         localStorage.setItem('userRole', data.user.role);
-        localStorage.setItem('userId', data.user.id); 
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('name', data.user.name);
 
         // Role-based navigation
         const dashboardUrl = getRoleBasedDashboard(data.user.role);

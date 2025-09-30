@@ -26,7 +26,7 @@ const Page = () => {
       try {
         setLoading(true);
 
-        const response = await fetch('http://localhost:4441/api/Admin/');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/Admin/`);
         const data = await response.json();
 
         // Simulate loading delay
@@ -58,10 +58,11 @@ const Page = () => {
   const refreshRecruiters = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:4441/api/Admin/', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/Admin/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         cache: 'no-cache' // Prevent caching issues
       });

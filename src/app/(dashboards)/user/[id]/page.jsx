@@ -1,0 +1,328 @@
+"use client"
+
+import React, { useState, useEffect } from 'react';
+import { User, ArrowLeft, Save, X } from 'lucide-react';
+
+const PREFERENCE_OPTIONS = ['Engineering', 'Design', 'Marketing', 'Product', 'Data'];
+
+const EditProfilePage = () => {
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(false);
+
+    const [formData, setFormData] = useState({
+        name: '',
+        prefrence: ''
+    });
+
+    const [originalData, setOriginalData] = useState({
+        name: '',
+        prefrence: ''
+    });
+
+    useEffect(() => {
+        const userId = localStorage.getItem("userId");
+        const authToken = localStorage.getItem("authToken");
+
+        if (!userId || !authToken) {
+            window.location.href = '/auth/login';
+            return;
+        }
+
+        fetchUserData(userId, authToken);
+    }, []);
+
+    const fetchUserData = async (userId, authToken) => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch user data');
+            }
+
+            const userData = await response.json();
+
+            // Get prefrence from localStorage
+            const storedPref = localStorage.getItem('prefrence') || '';
+
+            const data = {
+                name: userData.name || '',
+                prefrence: storedPref.trim()
+            };
+
+            setFormData(data);
+            setOriginalData(data);
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching user data:', err);
+            setError('Failed to load user data');
+            setLoading(false);
+        }
+    };
+
+    const handleNameChange = (e) => {
+        setFormData(prev => ({
+            ...prev,
+            name: e.target.value
+        }));
+        setError(null);
+        setSuccess(false);
+    };
+
+    const handlePreferenceSelect = (preference) => {
+        setFormData(prev => ({
+            ...prev,
+            prefrence: preference
+        }));
+        setError(null);
+        setSuccess(false);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        // Validation
+        if (!formData.name.trim()) {
+            setError('Name is required');
+            return;
+        }
+
+        if (!formData.prefrence) {
+            setError('Please select a preference');
+            return;
+        }
+
+        setSaving(true);
+        setError(null);
+
+        const userId = localStorage.getItem("userId");
+        const authToken = localStorage.getItem("authToken");
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}/edit`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: formData.name.trim(),
+                    prefrence: formData.prefrence
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update profile');
+            }
+
+            const result = await response.json();
+
+            localStorage.removeItem("prefrence", formData.prefrence)
+            // Update localStorage
+            localStorage.setItem('prefrence', formData.prefrence);
+
+            setSuccess(true);
+            setOriginalData(formData);
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+
+
+            // Redirect back to dashboard after 1.5 seconds
+            setTimeout(() => {
+                window.location.href = '/user';
+            }, 1500);
+
+        } catch (err) {
+            console.error('Error updating profile:', err);
+            setError(err.message || 'Failed to update profile. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        window.location.href = '/dashboards/user';
+    };
+
+    const hasChanges = () => {
+        return formData.name !== originalData.name ||
+            formData.prefrence !== originalData.prefrence;
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p className="text-blue-600 font-medium">Loading Profile...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
+            {/* Header */}
+            <header className="shadow-lg" style={{ backgroundColor: '#1c398e' }}>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="flex items-center space-x-4">
+                        <button
+                            onClick={handleCancel}
+                            className="p-3 hover:bg-blue-500 rounded-xl transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-white" />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl font-bold text-white">Edit Profile</h1>
+                            <p className="text-blue-200">Update your name and job preference</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* Content */}
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="px-8 py-6" style={{ backgroundColor: '#1c398e' }}>
+                        <div className="flex items-center space-x-3">
+                            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                                <User className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">Profile Information</h2>
+                                <p className="text-blue-100 text-sm">Keep your information up to date</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-8">
+                        {/* Success Message */}
+                        {success && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3">
+                                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                                <p className="text-green-800 font-medium">Profile updated successfully! Redirecting...</p>
+                            </div>
+                        )}
+
+                        {/* Error Message */}
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+                                <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                <p className="text-red-800">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Name Field */}
+                        <div className="mb-8">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Full Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={handleNameChange}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                placeholder="Enter your full name"
+                                disabled={saving}
+                            />
+                        </div>
+
+                        {/* Preference Field (Single Selection) */}
+                        <div className="mb-8">
+                            <label className="block text-sm font-semibold text-gray-700 mb-3">
+                                Job Preference <span className="text-red-500">*</span>
+                            </label>
+                            <p className="text-sm text-gray-600 mb-4">
+                                Select the area you're most interested in. This helps us recommend relevant jobs.
+                            </p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {PREFERENCE_OPTIONS.map((preference) => {
+                                    const isSelected = formData.prefrence === preference;
+                                    return (
+                                        <button
+                                            key={preference}
+                                            type="button"
+                                            onClick={() => handlePreferenceSelect(preference)}
+                                            disabled={saving}
+                                            className={`p-4 rounded-lg border-2 transition-all duration-200 text-left font-medium ${isSelected
+                                                ? 'border-blue-500 bg-blue-50 text-blue-900'
+                                                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                                                } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span>{preference}</span>
+                                                {isSelected && (
+                                                    <div className="h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {formData.prefrence && (
+                                <p className="mt-3 text-sm text-gray-600">
+                                    Selected: <span className="font-medium text-gray-900">{formData.prefrence}</span>
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={saving || !hasChanges()}
+                                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${saving || !hasChanges()
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'text-white hover:opacity-90 transform hover:scale-105 shadow-md hover:shadow-lg'
+                                    }`}
+                                style={saving || !hasChanges() ? {} : { backgroundColor: '#1c398e' }}
+                            >
+                                {saving ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        <span>Saving...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="h-5 w-5" />
+                                        <span>Save Changes</span>
+                                    </>
+                                )}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleCancel}
+                                disabled={saving}
+                                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+
+                        {!hasChanges() && (
+                            <p className="text-sm text-gray-500 text-center mt-4">
+                                No changes detected
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default EditProfilePage;

@@ -21,7 +21,6 @@ const Page = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
-
     // Fetch existing job data when component mounts
     useEffect(() => {
         fetchJobData();
@@ -29,7 +28,7 @@ const Page = () => {
 
     const fetchJobData = async () => {
         try {
-            const response = await fetch(`http://localhost:4441/api/job/${id}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                 }
@@ -62,7 +61,7 @@ const Page = () => {
         setError('');
 
         try {
-            const response = await fetch(`http://localhost:4441/api/job/${id}/update`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${id}/update`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

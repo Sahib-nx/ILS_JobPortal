@@ -12,6 +12,8 @@ const Page = () => {
   const [actionCompleted, setActionCompleted] = useState(false);
   const [error, setError] = useState(null);
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+
   const params = useParams()
   const recruiterId = params.id;
 
@@ -29,7 +31,7 @@ const Page = () => {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`http://localhost:4441/api/Admin/${recruiterId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/Admin/${recruiterId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -38,7 +40,9 @@ const Page = () => {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch recruiter details');
+          if (error.message.includes('401') || error.message.includes('403')) {
+            throw new Error('Please logout and login again, Token Expired! ');
+          }
         }
 
         const data = await response.json();
@@ -60,11 +64,11 @@ const Page = () => {
     setActionLoading(status); // Set to the specific action being performed
 
     try {
-      const response = await fetch(`http://localhost:4441/api/Admin/status/${recruiterId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/Admin/status/${recruiterId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-           Authorization: `Bearer ${localStorage.getItem('authToken')}`
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({ status })
       });
@@ -302,8 +306,8 @@ const Page = () => {
                     onClick={() => handleStatusChange('approved')}
                     disabled={actionLoading}
                     className={`w-full font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${actionLoading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-green-600 hover:bg-green-700'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
                       } text-white`}
                   >
                     {actionLoading && actionLoading === 'approved' ? (
@@ -323,8 +327,8 @@ const Page = () => {
                     onClick={() => handleStatusChange('rejected')}
                     disabled={actionLoading}
                     className={`w-full font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 ${actionLoading
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-red-600 hover:bg-red-700'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
                       } text-white`}
                   >
                     {actionLoading && actionLoading === 'rejected' ? (
@@ -391,8 +395,8 @@ const Page = () => {
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <span className="text-gray-600 text-sm">Status</span>
                   <span className={`text-sm font-medium px-2 py-1 rounded capitalize ${recruiter.applicationStatus === 'approved' ? 'text-green-700 bg-green-100' :
-                      recruiter.applicationStatus === 'rejected' ? 'text-red-700 bg-red-100' :
-                        'text-yellow-700 bg-yellow-100'
+                    recruiter.applicationStatus === 'rejected' ? 'text-red-700 bg-red-100' :
+                      'text-yellow-700 bg-yellow-100'
                     }`}>
                     {recruiter.applicationStatus || 'Pending'}
                   </span>
