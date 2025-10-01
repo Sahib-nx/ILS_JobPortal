@@ -6,6 +6,7 @@ import {
     CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
 import { getUserId } from '@/app/utils';
+import toast from 'react-hot-toast';
 
 const Page = () => {
     const [formData, setFormData] = useState({
@@ -27,7 +28,6 @@ const Page = () => {
 
         try {
             const userId = getUserId();
-
             const jobData = {
                 userId,
                 title: formData.title,

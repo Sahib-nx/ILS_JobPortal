@@ -453,24 +453,6 @@ const RecruiterDashboard = () => {
                 </button>
               </div>
             )}
-
-            {/* Debug Info 
-          {process.env.NODE_ENV === 'development' && (
-            <div className="p-4 border-t border-blue-100 bg-gray-50">
-              <details className="text-xs text-gray-600">
-                <summary className="cursor-pointer font-semibold">Debug Info</summary>
-                <div className="mt-2 space-y-1">
-                  <p>Total jobs fetched: {jobs.length}</p>
-                  <p>Filtered jobs: {filteredJobs.length}</p>
-                  <p>Current user ID: {getUserId()}</p>
-                  <p>Search term: "{searchTerm}"</p>
-                  <p>Filter type: {filterType}</p>
-                  <p>Active jobs: {jobs.filter(job => (job.jobStatus || job.status || 'active') === 'active').length}</p>
-                  <p>Closed jobs: {jobs.filter(job => (job.jobStatus || job.status || 'active') === 'closed').length}</p>
-                </div>
-              </details>
-            </div>
-          )} */}
           </div>
         </main>
 
