@@ -313,7 +313,7 @@ const JobDetailPage = ({ jobId }) => {
     );
   }
 
-  return (
+ return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40 shadow-sm">
@@ -351,12 +351,12 @@ const JobDetailPage = ({ jobId }) => {
             {/* Job Header Card */}
             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-gray-100">
               <div className="mb-6">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight break-words">
                   {job.title}
                 </h1>
                 <div className="flex items-center text-gray-600 mb-4">
-                  <Building2 className="w-5 h-5 mr-2 text-blue-500" />
-                  <span className="font-medium">{renderPostedBy(job.postedBy)}</span>
+                  <Building2 className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0" />
+                  <span className="font-medium break-words">{renderPostedBy(job.postedBy)}</span>
                 </div>
               </div>
 
@@ -364,36 +364,36 @@ const JobDetailPage = ({ jobId }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
                       <MapPin className="w-5 h-5 text-white" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-500">Location</p>
-                      <p className="font-semibold text-gray-900">{job.location || 'Remote'}</p>
+                      <p className="font-semibold text-gray-900 break-words">{job.location || 'Remote'}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
                       <Clock className="w-5 h-5 text-white" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-500">Job Type</p>
-                      <p className="font-semibold text-gray-900">{job.type || 'Full-time'}</p>
+                      <p className="font-semibold text-gray-900 break-words">{job.type || 'Full-time'}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-100">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                       <Calendar className="w-5 h-5 text-white" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-500">Posted</p>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-gray-900 break-words">
                         {job.datePosted ? new Date(job.datePosted).toLocaleDateString() : 'Recently'}
                       </p>
                     </div>
@@ -403,12 +403,12 @@ const JobDetailPage = ({ jobId }) => {
                 {job.experience && (
                   <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
                         <Star className="w-5 h-5 text-white" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-500">Experience</p>
-                        <p className="font-semibold text-gray-900">{job.experience}</p>
+                        <p className="font-semibold text-gray-900 break-words">{job.experience}</p>
                       </div>
                     </div>
                   </div>
@@ -419,11 +419,12 @@ const JobDetailPage = ({ jobId }) => {
             {/* Job Description */}
             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-gray-100">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <Briefcase className="w-6 h-6 mr-3 text-blue-500" />
+                <Briefcase className="w-6 h-6 mr-3 text-blue-500 flex-shrink-0" />
                 Job Description
               </h2>
               <div
-                className="text-gray-700 leading-relaxed space-y-4"
+                className="text-gray-700 leading-relaxed space-y-4 break-words overflow-wrap-anywhere"
+                style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                 dangerouslySetInnerHTML={{
                   __html: (job.description || job.jobDescription || 'No description available.')
                     .replace(/\n/g, '<br>')
@@ -434,30 +435,30 @@ const JobDetailPage = ({ jobId }) => {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 sticky top-24">
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Quick Overview</h3>
 
               <div className="space-y-4 mb-8">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <span className="text-gray-600 font-medium">Job Type</span>
-                  <span className="font-semibold text-gray-900">{job.type || 'Full-time'}</span>
+                  <span className="font-semibold text-gray-900 break-words text-right">{job.type || 'Full-time'}</span>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <span className="text-gray-600 font-medium">Location</span>
-                  <span className="font-semibold text-gray-900 text-right">{job.location || 'Remote'}</span>
+                  <span className="text-gray-600 font-medium flex-shrink-0 mr-2">Location</span>
+                  <span className="font-semibold text-gray-900 text-right break-words">{job.location || 'Remote'}</span>
                 </div>
 
                 {job.experience && (
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                     <span className="text-gray-600 font-medium">Experience</span>
-                    <span className="font-semibold text-gray-900">{job.experience}</span>
+                    <span className="font-semibold text-gray-900 break-words text-right">{job.experience}</span>
                   </div>
                 )}
 
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <span className="text-gray-600 font-medium">Posted By</span>
-                  <span className="font-semibold text-gray-900 text-right">{renderPostedBy(job.postedBy)}</span>
+                  <span className="text-gray-600 font-medium flex-shrink-0 mr-2">Posted By</span>
+                  <span className="font-semibold text-gray-900 text-right break-words">{renderPostedBy(job.postedBy)}</span>
                 </div>
               </div>
 
@@ -490,10 +491,10 @@ const JobDetailPage = ({ jobId }) => {
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-8">
-              <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">Apply for Position</h3>
-                <p className="text-gray-600 mt-1">{job.title}</p>
-                <p className="text-sm text-blue-600 mt-2">Applying as: {user.name || user.email}</p>
+              <div className="min-w-0 flex-1 pr-4">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">Apply for Position</h3>
+                <p className="text-gray-600 mt-1 break-words">{job.title}</p>
+                <p className="text-sm text-blue-600 mt-2 break-words">Applying as: {user.name || user.email}</p>
               </div>
               <button
                 onClick={() => {
@@ -505,7 +506,7 @@ const JobDetailPage = ({ jobId }) => {
                     phone: '',
                   });
                 }}
-                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors flex-shrink-0"
               >
                 <X className="w-6 h-6 text-gray-500" />
               </button>
@@ -523,7 +524,7 @@ const JobDetailPage = ({ jobId }) => {
                     required
                     value={applicationData.email || user.email || ''}
                     onChange={(e) => setApplicationData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-[#1c398e] placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     placeholder="your.email@example.com"
                   />
                 </div>
@@ -536,7 +537,7 @@ const JobDetailPage = ({ jobId }) => {
                     type="tel"
                     value={applicationData.phone}
                     onChange={(e) => setApplicationData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-[#1c398e] placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     placeholder="+91 98765 43210"
                   />
                 </div>
@@ -571,17 +572,17 @@ const JobDetailPage = ({ jobId }) => {
                     <div className="space-y-4">
                       <div className="p-4 bg-white border border-green-200 rounded-xl">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <CheckCircle className="w-6 h-6 text-green-500" />
-                            <div className="text-left">
-                              <p className="text-green-700 font-medium">{applicationData.resume.name}</p>
+                          <div className="flex items-center space-x-3 min-w-0 flex-1">
+                            <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
+                            <div className="text-left min-w-0">
+                              <p className="text-green-700 font-medium break-words">{applicationData.resume.name}</p>
                               <p className="text-gray-500 text-sm">{formatFileSize(applicationData.resume.size)}</p>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={handleRemoveFile}
-                            className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors"
+                            className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors flex-shrink-0 ml-2"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -596,7 +597,7 @@ const JobDetailPage = ({ jobId }) => {
                 {fileError && (
                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
                     <p className="text-red-700 text-sm flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-2" />
+                      <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
                       {fileError}
                     </p>
                   </div>
@@ -615,7 +616,7 @@ const JobDetailPage = ({ jobId }) => {
                   type="checkbox"
                   id="terms"
                   required
-                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
                 />
                 <label htmlFor="terms" className="text-sm text-gray-700 leading-relaxed">
                   I agree to the <a href="#" className="text-blue-600 hover:underline font-medium">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline font-medium">Privacy Policy</a>

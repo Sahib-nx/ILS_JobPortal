@@ -559,10 +559,6 @@ const Page = () => {
                                                     </span>
                                                 </div>
 
-                                                <p className="text-gray-600 mb-4 line-clamp-3">
-                                                    {job.description || 'No description available'}
-                                                </p>
-
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                                                     <div className="flex items-center space-x-2 text-gray-600">
                                                         <Building className="h-4 w-4 flex-shrink-0" />

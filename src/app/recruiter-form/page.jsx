@@ -315,15 +315,6 @@ const CompanyRegistrationForm = () => {
                 <span className="font-medium">{submitStatus.message}</span>
               </div>
             )}
-
-            {/* Debug Section - */}
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Debug Info:</p>
-              <pre className="text-xs text-gray-600 whitespace-pre-wrap">
-                {JSON.stringify(formData, null, 2)}
-              </pre>
-            </div>
-
             {/* Submit Button */}
             <button
               onClick={handleSubmit}

@@ -12,8 +12,6 @@ const Page = () => {
   const [actionCompleted, setActionCompleted] = useState(false);
   const [error, setError] = useState(null);
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-
   const params = useParams()
   const recruiterId = params.id;
 
@@ -192,13 +190,13 @@ const Page = () => {
                 <Building2 className="w-10 h-10 text-white" />
               </div>
               <div className="space-y-2">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 break-words">
                   {recruiter.companyName || 'Company Name'}
                 </h1>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-gray-600">
                   <div className="flex items-center space-x-2">
                     <Mail className="w-4 h-4" />
-                    <span className="text-sm">{recruiter.companyEmail || 'Email not provided'}</span>
+                    <span className="text-sm break-all">{recruiter.companyEmail || 'Email not provided'}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4" />
@@ -242,7 +240,7 @@ const Page = () => {
                 <div className="space-y-3">
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Location</p>
-                    <p className="text-gray-800 font-medium">{recruiter.location || 'Not provided'}</p>
+                    <p className="text-gray-800 font-medium break-words">{recruiter.location || 'Not provided'}</p>
                   </div>
                   {recruiter.website && (
                     <div className="p-3 bg-gray-50 rounded-lg">
@@ -271,18 +269,18 @@ const Page = () => {
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <p className="text-sm font-semibold text-blue-800 mb-2">Company Name</p>
-                  <p className="text-gray-800 font-bold text-lg">{recruiter.companyName || 'Not specified'}</p>
+                  <p className="text-gray-800 font-bold text-lg break-words">{recruiter.companyName || 'Not specified'}</p>
                 </div>
 
                 <div className="p-4 bg-green-50 rounded-lg border border-green-100">
                   <p className="text-sm font-semibold text-green-800 mb-2">Location</p>
-                  <p className="text-gray-800 font-bold">{recruiter.location || 'Not specified'}</p>
+                  <p className="text-gray-800 font-bold break-words">{recruiter.location || 'Not specified'}</p>
                 </div>
 
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-2">About Company</p>
                   <div className="p-4 bg-gray-50 rounded-lg border-l-4 border-purple-500">
-                    <p className="text-gray-700 leading-relaxed">
+                    <p className="text-gray-700 leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere">
                       {recruiter.companyDetails || 'No details provided.'}
                     </p>
                   </div>
