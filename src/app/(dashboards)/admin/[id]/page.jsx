@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Mail, Calendar, FileText, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { getUserId } from '@/app/utils';
+import toast from 'react-hot-toast';
 
 const Page = () => {
   const [recruiter, setRecruiter] = useState(null);
@@ -37,13 +38,15 @@ const Page = () => {
           }
         });
 
-        if (!response.ok) {
-          if (error.message.includes('401') || error.message.includes('403')) {
-            throw new Error('Please logout and login again, Token Expired! ');
-          }
+        const data = await response.json();
+
+        if (data.success === false) {
+          setError(data.message)
+          toast.error(data.message)
+          return;
         }
 
-        const data = await response.json();
+
         setRecruiter(data);
       } catch (error) {
         console.error('Error fetching recruiter:', error);

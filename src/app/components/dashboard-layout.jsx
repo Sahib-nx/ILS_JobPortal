@@ -175,7 +175,7 @@ const Navigation = ({ isLoaded }) => {
                                 className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-3 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base">
                                 Login
                             </button>
-                        ) : (
+                        ) : userRole ? (
                             <button
                                 onClick={() => {
                                     console.log('User icon button clicked');
@@ -186,9 +186,9 @@ const Navigation = ({ isLoaded }) => {
                                 <User className="w-5 h-5" />
                                 <span>Dashboard</span>
                             </button>
-                        )}
+                        ) : null}
 
-                        {userRole === 'User' && (
+                        {!isLoggedIn && (
                             <button
                                 onClick={() => {
                                     console.log('Recruiter button clicked');

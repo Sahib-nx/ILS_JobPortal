@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Mail, MapPin, Phone, Globe, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { getUserId } from '../utils';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 const CompanyRegistrationForm = () => {
   const router = useRouter();
@@ -26,9 +27,14 @@ const CompanyRegistrationForm = () => {
     const userId = getUserId();
     if (!userId) {
       // Redirect to login if no valid token
-      window.location.href = '/auth/login';
+      window.location.href = '/recruiter/register';
       return;
     }
+
+    if(localStorage.getItem("userRole") === "Recruiter") {
+      window.localStorage.href = "/recruiter"
+      toast.error("You are already a Recruiter!!")
+     }
     setIsVisible(true);
   }, []);
   const validateField = (name, value) => {
@@ -176,7 +182,7 @@ const CompanyRegistrationForm = () => {
           phone: '',
           website: ''
         });
-        router.push('/jobs-landing');
+        router.push('/pending-approval-page');
       } else {
         setSubmitStatus({
           type: 'error',

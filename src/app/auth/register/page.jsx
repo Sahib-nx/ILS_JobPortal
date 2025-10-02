@@ -79,12 +79,7 @@ const RegisterPage = () => {
 
       const data = await response.json();
 
-      // Add debugging
-      console.log('Response status:', response.status);
-      console.log('Response data:', data);
-
       if (response.ok && data.success) {
-        console.log('Registration successful, storing data...');
 
         // Store data in localStorage - Fix the property access
         localStorage.setItem('authToken', data.token);
