@@ -21,10 +21,24 @@ const CompanyRegistrationForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [showLogoutWarning, setShowLogoutWarning] = useState(false);
+
+  const handleBackClick = () => {
+    setShowLogoutWarning(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    window.location.href = '/recruiter/register';
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutWarning(false);
+  };
 
   useEffect(() => {
     // User authentication check
-    const userId = getUserId();
+    const userId = localStorage.getItem("userId")
     if (!userId) {
       // Redirect to login if no valid token
       window.location.href = '/recruiter/register';
@@ -32,11 +46,27 @@ const CompanyRegistrationForm = () => {
     }
 
     if(localStorage.getItem("userRole") === "Recruiter") {
-      window.localStorage.href = "/recruiter"
+      window.location.href = "/recruiter"
       toast.error("You are already a Recruiter!!")
+      return;
      }
+
+    // Prevent browser/phone back button
+    const handlePopState = () => {
+      setShowLogoutWarning(true);
+      window.history.pushState(null, '', window.location.pathname);
+    };
+
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
     setIsVisible(true);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, []);
+
   const validateField = (name, value) => {
     const newErrors = { ...errors };
 
@@ -130,7 +160,7 @@ const CompanyRegistrationForm = () => {
       return;
     }
 
-    const userId = getUserId();
+    const userId = localStorage.getItem("userId");
     if (!userId) {
       setSubmitStatus({ type: 'error', message: 'Authentication required. Please log in.' });
       return;
@@ -210,8 +240,48 @@ const CompanyRegistrationForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4">
+      {/* Logout Warning Modal */}
+      {showLogoutWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full transform animate-pulse">
+            <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 text-center mb-4">Warning!</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Going back will log you out and you'll lose all unsaved progress. Are you sure you want to continue?
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={cancelLogout}
+                className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors duration-200"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`max-w-2xl mx-auto transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
+
+        {/* Back Button */}
+        <button
+          onClick={handleBackClick}
+          className="mb-6 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span className="font-medium">Back</span>
+        </button>
 
         {/* Header */}
         <div className="text-center mb-12">

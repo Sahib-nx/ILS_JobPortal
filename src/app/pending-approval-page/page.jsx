@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Mail, Clock, LogOut, Shield } from 'lucide-react';
+import { CheckCircle, Mail, Clock, LogOut, Shield, AlertCircle } from 'lucide-react';
 
 const PendingApprovalPage = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutWarning, setShowLogoutWarning] = useState(false);
 
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
+  const handleBackClick = () => {
+    setShowLogoutWarning(true);
+  };
 
   const handleLogout = () => {
     setIsLoggingOut(true);
@@ -20,14 +21,74 @@ const PendingApprovalPage = () => {
     }, 500);
   };
 
+  const cancelLogout = () => {
+    setShowLogoutWarning(false);
+  };
+  useEffect(() => {
+    // Prevent browser/phone back button
+    const handlePopState = () => {
+      setShowLogoutWarning(true);
+      window.history.pushState(null, '', window.location.pathname);
+    };
+
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
+    setIsLoaded(true);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white flex items-center justify-center p-3 xs:p-4 sm:p-6 lg:p-8">
+      {/* Logout Warning Modal */}
+      {showLogoutWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full transform animate-pulse">
+            <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 text-center mb-4">Warning!</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Going back will log you out. Are you sure you want to continue?
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={cancelLogout}
+                className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors duration-200"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-10 -right-10 xs:-top-20 xs:-right-20 sm:-top-40 sm:-right-40 w-32 h-32 xs:w-40 xs:h-40 sm:w-80 sm:h-80 bg-gradient-to-br from-[#1c398e]/10 to-blue-300/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute -bottom-10 -left-10 xs:-bottom-20 xs:-left-20 sm:-bottom-40 sm:-left-40 w-32 h-32 xs:w-40 xs:h-40 sm:w-80 sm:h-80 bg-gradient-to-br from-blue-400/10 to-[#1c398e]/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
       <div className={`w-full max-w-[95%] xs:max-w-sm sm:max-w-md lg:max-w-2xl relative z-10 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+        {/* Back Button */}
+        <button
+          onClick={handleBackClick}
+          className="mb-6 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span className="font-medium">Back</span>
+        </button>
+
         <div className="bg-white/80 backdrop-blur-lg rounded-xl xs:rounded-2xl sm:rounded-3xl p-5 xs:p-6 sm:p-8 lg:p-12 shadow-2xl border border-white/50">
           <div className="text-center mb-6 xs:mb-8">
             <div className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 xs:mb-6 animate-bounce">

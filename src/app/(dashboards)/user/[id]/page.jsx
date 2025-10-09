@@ -1,9 +1,10 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { User, ArrowLeft, Save, X } from 'lucide-react';
+import { User, ArrowLeft, Save, X, Info } from 'lucide-react';
 
 const PREFERENCE_OPTIONS = ['Engineering', 'Design', 'Marketing', 'Product', 'Data'];
+const MAX_PREFERENCES = 3;
 
 const EditProfilePage = () => {
     const [loading, setLoading] = useState(true);
@@ -13,12 +14,12 @@ const EditProfilePage = () => {
 
     const [formData, setFormData] = useState({
         name: '',
-        prefrence: ''
+        preference: []
     });
 
     const [originalData, setOriginalData] = useState({
         name: '',
-        prefrence: ''
+        preference: []
     });
 
     useEffect(() => {
@@ -48,12 +49,12 @@ const EditProfilePage = () => {
 
             const userData = await response.json();
 
-            // Get prefrence from localStorage
             const storedPref = localStorage.getItem('prefrence') || '';
+            const preferencesArray = storedPref.trim() ? storedPref.split(',').map(p => p.trim()).filter(p => p) : [];
 
             const data = {
                 name: userData.name || '',
-                prefrence: storedPref.trim()
+                preference: preferencesArray
             };
 
             setFormData(data);
@@ -75,11 +76,26 @@ const EditProfilePage = () => {
         setSuccess(false);
     };
 
-    const handlePreferenceSelect = (preference) => {
-        setFormData(prev => ({
-            ...prev,
-            prefrence: preference
-        }));
+    const handlePreferenceToggle = (preference) => {
+        setFormData(prev => {
+            const currentPreferences = prev.preference;
+            const isSelected = currentPreferences.includes(preference);
+
+            let newPreferences;
+            if (isSelected) {
+                newPreferences = currentPreferences.filter(p => p !== preference);
+            } else {
+                if (currentPreferences.length >= MAX_PREFERENCES) {
+                    return prev;
+                }
+                newPreferences = [...currentPreferences, preference];
+            }
+
+            return {
+                ...prev,
+                preference: newPreferences
+            };
+        });
         setError(null);
         setSuccess(false);
     };
@@ -87,14 +103,13 @@ const EditProfilePage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation
         if (!formData.name.trim()) {
             setError('Name is required');
             return;
         }
 
-        if (!formData.prefrence) {
-            setError('Please select a preference');
+        if (formData.preference.length === 0) {
+            setError('Please select at least one preference');
             return;
         }
 
@@ -105,15 +120,17 @@ const EditProfilePage = () => {
         const authToken = localStorage.getItem("authToken");
 
         try {
+            const preferencesString = formData.preference.join(',');
+
             const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}/edit`, {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     name: formData.name.trim(),
-                    prefrence: formData.prefrence
+                    preference: preferencesString
                 })
             });
 
@@ -124,16 +141,13 @@ const EditProfilePage = () => {
 
             const result = await response.json();
 
-            localStorage.removeItem("prefrence", formData.prefrence)
-            // Update localStorage
-            localStorage.setItem('prefrence', formData.prefrence);
+            localStorage.removeItem("prefrence");
+            localStorage.setItem('prefrence', preferencesString);
 
             setSuccess(true);
             setOriginalData(formData);
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
 
-
-            // Redirect back to dashboard after 1.5 seconds
             setTimeout(() => {
                 window.location.href = '/user';
             }, 1500);
@@ -151,8 +165,9 @@ const EditProfilePage = () => {
     };
 
     const hasChanges = () => {
-        return formData.name !== originalData.name ||
-            formData.prefrence !== originalData.prefrence;
+        const nameChanged = formData.name !== originalData.name;
+        const preferencesChanged = JSON.stringify([...formData.preference].sort()) !== JSON.stringify([...originalData.preference].sort());
+        return nameChanged || preferencesChanged;
     };
 
     if (loading) {
@@ -166,9 +181,10 @@ const EditProfilePage = () => {
         );
     }
 
+    const isLimitReached = formData.preference.length >= MAX_PREFERENCES;
+
     return (
         <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
-            {/* Header */}
             <header className="shadow-lg" style={{ backgroundColor: '#1c398e' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center space-x-4">
@@ -180,13 +196,12 @@ const EditProfilePage = () => {
                         </button>
                         <div>
                             <h1 className="text-2xl font-bold text-white">Edit Profile</h1>
-                            <p className="text-blue-200">Update your name and job preference</p>
+                            <p className="text-blue-200">Update your name and job preferences</p>
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Content */}
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div className="px-8 py-6" style={{ backgroundColor: '#1c398e' }}>
@@ -202,7 +217,6 @@ const EditProfilePage = () => {
                     </div>
 
                     <div className="p-8">
-                        {/* Success Message */}
                         {success && (
                             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3">
                                 <div className="h-2 w-2 bg-green-500 rounded-full"></div>
@@ -210,7 +224,6 @@ const EditProfilePage = () => {
                             </div>
                         )}
 
-                        {/* Error Message */}
                         {error && (
                             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
                                 <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -218,7 +231,6 @@ const EditProfilePage = () => {
                             </div>
                         )}
 
-                        {/* Name Field */}
                         <div className="mb-8">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Full Name <span className="text-red-500">*</span>
@@ -233,34 +245,51 @@ const EditProfilePage = () => {
                             />
                         </div>
 
-                        {/* Preference Field (Single Selection) */}
                         <div className="mb-8">
                             <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                Job Preference <span className="text-red-500">*</span>
+                                Job Preferences <span className="text-red-500">*</span>
                             </label>
+
+                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <Info className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                                    <p className="text-sm text-blue-800 font-medium">
+                                        Select up to 3 preferences
+                                    </p>
+                                </div>
+                                <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                                    {formData.preference.length}/{MAX_PREFERENCES}
+                                </div>
+                            </div>
+
                             <p className="text-sm text-gray-600 mb-4">
-                                Select the area you're most interested in. This helps us recommend relevant jobs.
+                                Select the areas you're most interested in. This helps us recommend relevant jobs.
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {PREFERENCE_OPTIONS.map((preference) => {
-                                    const isSelected = formData.prefrence === preference;
+                                    const isSelected = formData.preference.includes(preference);
+                                    const isDisabled = !isSelected && isLimitReached;
+                                    
                                     return (
                                         <button
                                             key={preference}
                                             type="button"
-                                            onClick={() => handlePreferenceSelect(preference)}
-                                            disabled={saving}
-                                            className={`p-4 rounded-lg border-2 transition-all duration-200 text-left font-medium ${isSelected
-                                                ? 'border-blue-500 bg-blue-50 text-blue-900'
-                                                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                                                } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                            onClick={() => handlePreferenceToggle(preference)}
+                                            disabled={saving || isDisabled}
+                                            className={`p-4 rounded-lg border-2 transition-all duration-200 text-left font-medium ${
+                                                isSelected
+                                                    ? 'border-blue-500 bg-blue-50 text-blue-900'
+                                                    : isDisabled
+                                                    ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
+                                            } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
                                             <div className="flex items-center justify-between">
                                                 <span>{preference}</span>
                                                 {isSelected && (
-                                                    <div className="h-5 w-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <div className="h-6 w-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                                        <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                                         </svg>
                                                     </div>
@@ -271,24 +300,34 @@ const EditProfilePage = () => {
                                 })}
                             </div>
 
-                            {formData.prefrence && (
-                                <p className="mt-3 text-sm text-gray-600">
-                                    Selected: <span className="font-medium text-gray-900">{formData.prefrence}</span>
-                                </p>
+                            {formData.preference.length > 0 && (
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                                    <p className="text-sm text-gray-700 font-medium mb-2">Selected Preferences:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.preference.map((pref) => (
+                                            <span
+                                                key={pref}
+                                                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500 text-white"
+                                            >
+                                                {pref}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
                             <button
                                 type="button"
                                 onClick={handleSubmit}
-                                disabled={saving || !hasChanges()}
-                                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${saving || !hasChanges()
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'text-white hover:opacity-90 transform hover:scale-105 shadow-md hover:shadow-lg'
-                                    }`}
-                                style={saving || !hasChanges() ? {} : { backgroundColor: '#1c398e' }}
+                                disabled={saving || !hasChanges() || formData.preference.length === 0}
+                                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                                    saving || !hasChanges() || formData.preference.length === 0
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'text-white hover:opacity-90 transform hover:scale-105 shadow-md hover:shadow-lg'
+                                }`}
+                                style={saving || !hasChanges() || formData.preference.length === 0 ? {} : { backgroundColor: '#1c398e' }}
                             >
                                 {saving ? (
                                     <>
@@ -298,7 +337,11 @@ const EditProfilePage = () => {
                                 ) : (
                                     <>
                                         <Save className="h-5 w-5" />
-                                        <span>Save Changes</span>
+                                        <span>
+                                            {formData.preference.length === 0
+                                                ? 'Select Preferences'
+                                                : `Save Changes (${formData.preference.length} selected)`}
+                                        </span>
                                     </>
                                 )}
                             </button>

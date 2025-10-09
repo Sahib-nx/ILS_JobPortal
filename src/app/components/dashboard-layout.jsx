@@ -186,9 +186,16 @@ const Navigation = ({ isLoaded }) => {
                                 <User className="w-5 h-5" />
                                 <span>Dashboard</span>
                             </button>
-                        ) : null}
+                        ) :
+                            <button
+                                onClick={() => { window.location.href = "/recruiter-form" }}
+                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white p-2 flex gap-2 rounded-lg hover:shadow-lg transition-all duration-300"
+                            >
+                                <span>SubmitForm</span>
+                            </button>
+                        }
 
-                        {!isLoggedIn && (
+                        {!isLoggedIn ? (
                             <button
                                 onClick={() => {
                                     console.log('Recruiter button clicked');
@@ -197,7 +204,18 @@ const Navigation = ({ isLoaded }) => {
                                 className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-2 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base whitespace-nowrap">
                                 Recruiter
                             </button>
-                        )}
+                        ) :
+                            <button
+                                onClick={() => {
+                                    localStorage.clear()
+                                    window.location.href = "/"
+                                }}
+                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-2 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base whitespace-nowrap">
+                                Logout
+                            </button>
+                        }
+
+
 
                     </div>
                 </div>
@@ -274,39 +292,39 @@ const HeroSection = ({ isLoaded, searchTerm, setSearchTerm }) => (
                                     top: window.scrollY + 500,
                                     behavior: 'smooth'
                                 })}
-                            className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold">
-                            <span>Search Jobs</span>
-                            <ArrowRight className="w-5 h-5" />
-                        </button>
+                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 font-semibold">
+                                <span>Search Jobs</span>
+                                <ArrowRight className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className={`relative transition-all duration-1000 delay-400 ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
-                } order-first lg:order-last`}>
-                <div className="relative">
-                    <div className="absolute top-4 left-4 w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl opacity-80 animate-bounce delay-1000 flex items-center justify-center">
-                        <Star className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="absolute bottom-8 right-8 w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl opacity-70 animate-bounce delay-2000 flex items-center justify-center">
-                        <Briefcase className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="absolute top-1/3 -right-4 w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg opacity-60 animate-bounce delay-3000 flex items-center justify-center">
-                        <Search className="w-5 h-5 text-white" />
-                    </div>
+                <div className={`relative transition-all duration-1000 delay-400 ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
+                    } order-first lg:order-last`}>
+                    <div className="relative">
+                        <div className="absolute top-4 left-4 w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl opacity-80 animate-bounce delay-1000 flex items-center justify-center">
+                            <Star className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="absolute bottom-8 right-8 w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl opacity-70 animate-bounce delay-2000 flex items-center justify-center">
+                            <Briefcase className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="absolute top-1/3 -right-4 w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg opacity-60 animate-bounce delay-3000 flex items-center justify-center">
+                            <Search className="w-5 h-5 text-white" />
+                        </div>
 
-                    <img
-                        src="/ils_image.svg"
-                        alt="Professional team working together - Find your dream job"
-                        className="w-full h-48 sm:h-64 lg:h-80 object-cover rounded-2xl transition-all duration-500"
-                        onError={(e) => {
-                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiBmaWxsPSJ1cmwoI2dyYWRpZW50KSIvPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMxYzM5OGU7c3RvcC1vcGFjaXR5OjAuMSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojM2I4MmY2O3N0b3Atb3BhY2l0eTowLjIiIC8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxYzM5OGUiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9ImJvbGQiPkpvYiBTZWVrZXIgSW1hZ2U8L3RleHQ+Cjwvc3ZnPgo=';
-                        }}
-                    />
+                        <img
+                            src="/ils_image.svg"
+                            alt="Professional team working together - Find your dream job"
+                            className="w-full h-48 sm:h-64 lg:h-80 object-cover rounded-2xl transition-all duration-500"
+                            onError={(e) => {
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiBmaWxsPSJ1cmwoI2dyYWRpZW50KSIvPgo8ZGVmcz4KPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMxYzM5OGU7c3RvcC1vcGFjaXR5OjAuMSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojM2I4MmY2O3N0b3Atb3BhY2l0eTowLjIiIC8+CjwvbGluZWFyR3JhZGllbnQ+CjwvZGVmcz4KPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiMxYzM5OGUiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9ImJvbGQiPkpvYiBTZWVrZXIgSW1hZ2U8L3RleHQ+Cjwvc3ZnPgo=';
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
     </section >
 );
 
@@ -327,16 +345,16 @@ const CategoryFilter = ({ categories, selectedCategory, setSelectedCategory, isL
                         key={category.id}
                         onClick={() => setSelectedCategory(category.id)}
                         className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap ${selectedCategory === category.id
-                                ? 'bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white shadow-lg'
-                                : 'bg-white/80 text-blue-600 hover:bg-white border border-blue-200 hover:shadow-md'
+                            ? 'bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white shadow-lg'
+                            : 'bg-white/80 text-blue-600 hover:bg-white border border-blue-200 hover:shadow-md'
                             }`}
                         style={{ animationDelay: `${index * 100}ms` }}
                     >
                         <category.icon className="w-4 h-4" />
                         <span className="font-medium">{category.name}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedCategory === category.id
-                                ? 'bg-white/20 text-white'
-                                : 'bg-blue-100 text-blue-600'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-blue-100 text-blue-600'
                             }`}>
                             {category.count}
                         </span>

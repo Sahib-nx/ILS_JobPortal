@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building, Edit } from 'lucide-react';
+import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building, Edit, X } from 'lucide-react';
 
 const Page = () => {
     const [userDetails, setUserDetails] = useState(null);
@@ -11,20 +11,29 @@ const Page = () => {
     const [activeTab, setActiveTab] = useState('recommended');
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState(null);
+    const [showPreferenceDialog, setShowPreferenceDialog] = useState(false);
+    const [selectedPreferences, setSelectedPreferences] = useState([]);
 
+    const availablePreferences = ['Engineering', 'Design', 'Marketing', 'Product', 'Data'];
 
     useEffect(() => {
-        const userId = localStorage.getItem("userId")
+        const userId = localStorage.getItem("userId");
         if (!userId) {
-            setAuthError("Unauthorised User!")
+            setAuthError("Unauthorised User!");
             return;
         }
 
-        console.log(userId)
-    }, [])
+        // Check if preference exists in localStorage
+        const existingPreference = localStorage.getItem('prefrence');
+        if (!existingPreference) {
+            setShowPreferenceDialog(true);
+        }
+
+        console.log(userId);
+    }, []);
 
     const getUserPreferences = () => {
-        if (typeof window === 'undefined') return ['Engineering'];
+        if (typeof window === 'undefined') return [];
 
         try {
             const prefs = localStorage.getItem('prefrence');
@@ -36,14 +45,44 @@ const Page = () => {
                     : [prefs.trim()];
 
                 console.log("Processed preferences:", userPrefs);
-                return userPrefs.length > 0 ? userPrefs : ['Engineering'];
+                return userPrefs.length > 0 ? userPrefs : [];
             }
 
-            return ['Engineering'];
+            return [];
         } catch (error) {
             console.error('Error getting preferences:', error);
-            return ['Engineering'];
+            return [];
         }
+    };
+
+    const handlePreferenceToggle = (preference) => {
+        setSelectedPreferences(prev => {
+            if (prev.includes(preference)) {
+                return prev.filter(p => p !== preference);
+            } else if (prev.length < 3) {
+                return [...prev, preference];
+            }
+            return prev;
+        });
+    };
+
+    const handleSavePreferences = () => {
+        if (selectedPreferences.length === 0) {
+            alert('Please select at least one preference');
+            return;
+        }
+
+        if (selectedPreferences.length > 3) {
+            alert('Please select maximum 3 preferences');
+            return;
+        }
+
+        const preferencesString = selectedPreferences.join(',');
+        localStorage.setItem('prefrence', preferencesString);
+        setShowPreferenceDialog(false);
+
+        // Reload to fetch jobs with new preferences
+        window.location.reload();
     };
 
     const getRecommendedJobs = (jobs, preferences) => {
@@ -58,7 +97,7 @@ const Page = () => {
 
         if (!preferences || preferences.length === 0) {
             console.log('No preferences to filter by');
-            return jobs.slice(0, 10);
+            return [];
         }
 
         const filtered = jobs.filter(job => {
@@ -145,7 +184,6 @@ const Page = () => {
             window.location.href = '/auth/login';
         }
     };
-
 
     useEffect(() => {
         const currentUserId = localStorage.getItem("userId");
@@ -311,6 +349,100 @@ const Page = () => {
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
+            {/* Preference Selection Dialog */}
+            {showPreferenceDialog && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full relative animate-fade-in overflow-hidden">
+                        {/* Header Section with Gradient */}
+                        <div className="bg-gradient-to-r from-[#1c398e] to-indigo-900 px-8 py-6">
+                            <div className="flex items-center justify-center mb-3">
+                                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                    <Star className="w-8 h-8 text-white" />
+                                </div>
+                            </div>
+                            <h2 className="text-2xl font-bold text-white text-center mb-2">
+                                Set Your Job Preferences
+                            </h2>
+                            <p className="text-blue-100 text-center text-sm">
+                                Help us personalize your job recommendations
+                            </p>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="p-8">
+                            {/* Info Badge */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <div className="flex items-start space-x-3">
+                                    <div className="flex-shrink-0 mt-0.5">
+                                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-blue-900">
+                                            Select up to 3 preferences
+                                        </p>
+                                        <p className="text-xs text-blue-700 mt-1">
+                                            {selectedPreferences.length}/3 selected
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Preferences Grid */}
+                            <div className="space-y-3 mb-6">
+                                {availablePreferences.map((preference) => {
+                                    const isSelected = selectedPreferences.includes(preference);
+                                    const isDisabled = !isSelected && selectedPreferences.length >= 3;
+                                    
+                                    return (
+                                        <button
+                                            key={preference}
+                                            onClick={() => handlePreferenceToggle(preference)}
+                                            disabled={isDisabled}
+                                            className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left font-medium ${
+                                                isSelected
+                                                    ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-sm'
+                                                    : isDisabled
+                                                    ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/30'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-base">{preference}</span>
+                                                {isSelected && (
+                                                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                                                        <svg className="w-4 h-4 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path d="M5 13l4 4L19 7"></path>
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <button
+                                onClick={handleSavePreferences}
+                                disabled={selectedPreferences.length === 0}
+                                className={`w-full py-4 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
+                                    selectedPreferences.length === 0
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
+                                }`}
+                            >
+                                {selectedPreferences.length === 0 
+                                    ? 'Select at least 1 preference'
+                                    : `Continue with ${selectedPreferences.length} ${selectedPreferences.length === 1 ? 'preference' : 'preferences'}`
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <header className="shadow-lg" style={{ backgroundColor: '#1c398e' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center justify-between">
@@ -418,17 +550,32 @@ const Page = () => {
 
                                     <div className="space-y-6">
                                         <div className="p-6 border border-gray-200 rounded-xl">
-                                            <h4 className="text-lg font-semibold text-gray-900 mb-4">Job Preferences</h4>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-lg font-semibold text-gray-900">Job Preferences</h4>
+                                                {/* <button
+                                                    onClick={() => {
+                                                        localStorage.removeItem('prefrence');
+                                                        setShowPreferenceDialog(true);
+                                                    }}
+                                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                >
+                                                    Edit
+                                                </button> */}
+                                            </div>
                                             <div className="space-y-3">
-                                                {getUserPreferences().map((pref, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
-                                                    >
-                                                        <span className="font-medium text-blue-900">{pref}</span>
-                                                        <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Active</span>
-                                                    </div>
-                                                ))}
+                                                {getUserPreferences().length > 0 ? (
+                                                    getUserPreferences().map((pref, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                                        >
+                                                            <span className="font-medium text-blue-900">{pref}</span>
+                                                            <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Active</span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p className="text-gray-500 text-sm">No preferences set</p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -526,8 +673,8 @@ const Page = () => {
                         )}
                     </div>
                 )}
-
- {/* Recommended Jobs Tab */}
+c
+                {/* Recommended Jobs Tab */}
                 {activeTab === 'recommended' && (
                     <div className="animate-fade-in">
                         <div className="flex items-center justify-between mb-8">
