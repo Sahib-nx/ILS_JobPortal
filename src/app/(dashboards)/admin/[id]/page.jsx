@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Mail, Calendar, FileText, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { getUserId } from '@/app/utils';
 import toast from 'react-hot-toast';
 
 const Page = () => {
@@ -19,7 +18,7 @@ const Page = () => {
   // Fetch recruiter data from API
   useEffect(() => {
     // User authentication check
-    const userId = getUserId();
+    const userId = localStorage.getItem("userId");
     if (!userId) {
       window.location.href = '/auth/login';
       return;

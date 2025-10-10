@@ -87,7 +87,8 @@ const RegisterPage = () => {
 
         // Store data in localStorage - Fix the property access
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('prefrence', data.user.prefrence);
+        localStorage.setItem('prefrence', "");
+        localStorage.setItem("email", data.user.email);
         localStorage.setItem('userRole', data.user.role);
         localStorage.setItem('userId', data.user.id);
         localStorage.setItem('name', data.user.name);

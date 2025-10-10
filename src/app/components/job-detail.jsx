@@ -5,6 +5,7 @@ import {
   ArrowLeft, MapPin, Clock, Users, Eye, Send, Upload, AlertCircle,
   Briefcase, Calendar, Loader2, Share2, Building2, Star, CheckCircle, X
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const JobDetailPage = ({ jobId }) => {
   const [job, setJob] = useState(null);
@@ -19,22 +20,6 @@ const JobDetailPage = ({ jobId }) => {
     email: '',
     phone: '',
   });
-
-  // Helper function to decode JWT token
-  const decodeJWT = (token) => {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-      const payload = parts[1];
-      const decodedPayload = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-      return JSON.parse(decodedPayload);
-    } catch (error) {
-      console.error('Error decoding JWT:', error);
-      return null;
-    }
-  };
 
   // Helper function to safely render user/poster information
   const renderPostedBy = (postedByData) => {
@@ -60,53 +45,39 @@ const JobDetailPage = ({ jobId }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Get current user from authtoken
+  // Get current user from localStorage
   useEffect(() => {
-    const getUserFromAuth = async () => {
+    const getUserFromLocalStorage = () => {
       setIsUserLoading(true);
       try {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          console.log('No auth token found');
-          setUser(null);
-          return;
-        }
+        const userId = localStorage.getItem('userId');
+        const userName = localStorage.getItem('name');
+        const userEmail = localStorage.getItem('email');
 
-        const decodedToken = decodeJWT(token);
-        if (!decodedToken) {
-          console.log('Invalid token');
+        if (!userId) {
+          console.log('No userId found in localStorage');
           setUser(null);
-          localStorage.removeItem('authToken');
-          return;
-        }
-
-        const currentTime = Date.now() / 1000;
-        if (decodedToken.exp && decodedToken.exp < currentTime) {
-          console.log('Token expired');
-          setUser(null);
-          localStorage.removeItem('authToken');
           return;
         }
 
         const userData = {
-          id: decodedToken.UserId,
-          email: decodedToken.email,
-          name: decodedToken.name,
+          id: userId,
+          email: userEmail || '',
+          name: userName || '',
         };
 
         console.log('User authenticated:', userData);
         setUser(userData);
 
       } catch (error) {
-        console.error('Error getting user from auth token:', error);
+        console.error('Error getting user from localStorage:', error);
         setUser(null);
-        localStorage.removeItem('authToken');
       } finally {
         setIsUserLoading(false);
       }
     };
 
-    getUserFromAuth();
+    getUserFromLocalStorage();
   }, []);
 
   // Fetch job details
@@ -133,8 +104,6 @@ const JobDetailPage = ({ jobId }) => {
     }
   }, [jobId]);
 
-
-
   const handleJobApplication = async (e) => {
     e.preventDefault();
 
@@ -154,6 +123,9 @@ const JobDetailPage = ({ jobId }) => {
         formData.append('resume', applicationData.resume);
       }
 
+      console.log('Submitting application with userId:', user.id);
+      console.log('API URL:', `${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${jobId}/apply/${user.id}`);
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${jobId}/apply/${user.id}`, {
         method: 'POST',
         headers: {
@@ -162,30 +134,36 @@ const JobDetailPage = ({ jobId }) => {
         body: formData
       });
 
-      // IMPROVED: Handle both JSON and non-JSON responses
-      let result;
-      const contentType = response.headers.get('content-type');
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
 
-      if (contentType && contentType.includes('application/json')) {
-        try {
-          result = await response.json();
-        } catch (parseError) {
-          console.error('JSON parse error:', parseError);
-          result = { error: 'Invalid response format from server' };
+      // Get response text first
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
+      // Try to parse as JSON
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', parseError);
+        console.error('Response was:', responseText);
+
+        // Check if it's an HTML error page
+        if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
+          alert('Server error: The server returned an HTML page instead of data. Please check the API endpoint or contact support.');
+        } else {
+          alert('Invalid response from server. Please try again.');
         }
-      } else {
-        // Handle non-JSON responses (like HTML error pages)
-        const textResponse = await response.text();
-        console.error('Non-JSON response:', textResponse);
-        result = {
-          error: response.ok ? 'Unexpected server response' : `Server error (${response.status}): ${response.statusText}`
-        };
+        setIsApplying(false);
+        return;
       }
 
       if (response.ok && result.message) {
         // Success case
         setShowApplicationForm(false);
-        alert(result.message || 'Application submitted successfully!');
+        toast.success("Application submitted successfully!");
+        // alert(result.message || 'Application submitted successfully!');
         console.log('Application successful:', result);
 
         // Reset form
@@ -194,6 +172,7 @@ const JobDetailPage = ({ jobId }) => {
           email: '',
           phone: '',
         });
+        window.location.href = "/user?tab=applications"
       } else {
         // Error case
         const errorMessage = result.error || result.message || 'Application failed. Please try again.';
@@ -215,7 +194,7 @@ const JobDetailPage = ({ jobId }) => {
     }
   };
 
-  //resume chnage
+  //resume change
   const handleResumeChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -226,34 +205,32 @@ const JobDetailPage = ({ jobId }) => {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
 
-    // TODO: Add toaster for validation messages
     if (!allowedTypes.includes(file.type)) {
       alert('Invalid file type. Only PDF, DOC, DOCX allowed.');
-      e.target.value = ''; // Reset the file input
+      e.target.value = '';
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
       alert(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum 10MB allowed.`);
-      e.target.value = ''; // Reset the file input
+      e.target.value = '';
       return;
     }
 
-    //Check for empty/corrupted files
     if (file.size === 0) {
       alert('File appears to be empty or corrupted. Please select a different file.');
-      e.target.value = ''; // Reset the file input
+      e.target.value = '';
       return;
     }
 
     console.log('File selected:', file.name, `${(file.size / (1024 * 1024)).toFixed(2)}MB`);
     setApplicationData(prev => ({ ...prev, resume: file }));
   };
+
   // Remove selected file
   const handleRemoveFile = () => {
     setApplicationData(prev => ({ ...prev, resume: null }));
     setFileError('');
-    // Clear the file input
     const fileInput = document.getElementById('resume');
     if (fileInput) fileInput.value = '';
   };
@@ -313,7 +290,7 @@ const JobDetailPage = ({ jobId }) => {
     );
   }
 
- return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40 shadow-sm">
@@ -536,10 +513,25 @@ const JobDetailPage = ({ jobId }) => {
                   <input
                     type="tel"
                     value={applicationData.phone}
-                    onChange={(e) => setApplicationData(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow only numbers, spaces, and + sign
+                      if (/^[0-9\s+]*$/.test(value)) {
+                        setApplicationData(prev => ({ ...prev, phone: value }));
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Validate on blur (when user leaves the field)
+                      const digits = e.target.value.replace(/\D/g, '');
+                    }}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     placeholder="+91 98765 43210"
                   />
+                  {applicationData.phone && applicationData.phone.replace(/\D/g, '').length < 10 && (
+                    <p className="text-red-500 text-sm mt-1">
+                      Phone number must be at least 10 digits
+                    </p>
+                  )}
                 </div>
               </div>
 

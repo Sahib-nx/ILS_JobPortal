@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Building2, Mail, Phone, Calendar, User, MapPin, Eye } from 'lucide-react';
-import { getUserId } from '@/app/utils';
 
 const Page = () => {
   const [recruiters, setRecruiters] = useState([]);
@@ -12,7 +11,7 @@ const Page = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [authError, setAuthError] = useState(null);
 
-  const userId = getUserId();
+  const userId = localStorage.getItem("userId");
   useEffect(() => {
     // User authentication check
     if (!userId) {

@@ -5,7 +5,6 @@ import {
     Plus, ArrowLeft,
     CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
-import { getUserId } from '@/app/utils';
 import toast from 'react-hot-toast';
 
 const Page = () => {
@@ -27,7 +26,7 @@ const Page = () => {
         setError('');
 
         try {
-            const userId = getUserId();
+            const userId = localStorage.getItem("userId");
             const jobData = {
                 userId,
                 title: formData.title,

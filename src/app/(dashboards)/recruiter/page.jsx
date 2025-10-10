@@ -5,7 +5,6 @@ import {
   Plus, Eye, Users, MapPin, Clock, Briefcase, Search,
   Calendar, CheckCircle, Loader2, User, Edit, Trash2, ArrowLeft
 } from 'lucide-react';
-import { getUserId } from '../../utils';
 import { DeleteJobModal } from '@/app/components/delete-job-model';
 
 const RecruiterDashboard = () => {
@@ -107,7 +106,7 @@ const RecruiterDashboard = () => {
     setError(null);
 
     try {
-      const userId = getUserId();
+      const userId = localStorage.getItem("userId");
       if (!userId) {
         // setAuthError("User not authenticated")
         // console.log('User not authenticated');

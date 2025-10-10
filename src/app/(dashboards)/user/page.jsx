@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building, Edit, X } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 const Page = () => {
     const [userDetails, setUserDetails] = useState(null);
@@ -14,7 +15,14 @@ const Page = () => {
     const [showPreferenceDialog, setShowPreferenceDialog] = useState(false);
     const [selectedPreferences, setSelectedPreferences] = useState([]);
 
+    const searchParams = useSearchParams();
+
     const availablePreferences = ['Engineering', 'Design', 'Marketing', 'Product', 'Data'];
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab) setActiveTab(tab);
+    }, [searchParams]);
 
     useEffect(() => {
         const userId = localStorage.getItem("userId");
@@ -394,19 +402,18 @@ const Page = () => {
                                 {availablePreferences.map((preference) => {
                                     const isSelected = selectedPreferences.includes(preference);
                                     const isDisabled = !isSelected && selectedPreferences.length >= 3;
-                                    
+
                                     return (
                                         <button
                                             key={preference}
                                             onClick={() => handlePreferenceToggle(preference)}
                                             disabled={isDisabled}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left font-medium ${
-                                                isSelected
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-sm'
-                                                    : isDisabled
+                                            className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left font-medium ${isSelected
+                                                ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-sm'
+                                                : isDisabled
                                                     ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                                                     : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/30'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="flex items-center justify-between">
                                                 <span className="text-base">{preference}</span>
@@ -427,13 +434,12 @@ const Page = () => {
                             <button
                                 onClick={handleSavePreferences}
                                 disabled={selectedPreferences.length === 0}
-                                className={`w-full py-4 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${
-                                    selectedPreferences.length === 0
-                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
-                                }`}
+                                className={`w-full py-4 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${selectedPreferences.length === 0
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
+                                    }`}
                             >
-                                {selectedPreferences.length === 0 
+                                {selectedPreferences.length === 0
                                     ? 'Select at least 1 preference'
                                     : `Continue with ${selectedPreferences.length} ${selectedPreferences.length === 1 ? 'preference' : 'preferences'}`
                                 }
@@ -593,7 +599,7 @@ const Page = () => {
                     </div>
                 )}
 
-                {/* Applications Tab */}
+{/* Applications Tab */}
                 {activeTab === 'applications' && (
                     <div className="animate-fade-in">
                         <div className="flex items-center justify-between mb-8">
@@ -611,35 +617,35 @@ const Page = () => {
                                 {appliedJobs.map((job, index) => (
                                     <div
                                         key={job._id || job.applicationDetails?.applicationId || index}
-                                        className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
+                                        className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 w-full overflow-hidden"
                                         style={{ animationDelay: `${index * 100}ms` }}
                                     >
                                         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
-                                            <div className="flex-1">
+                                            <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between mb-3">
-                                                    <h3 className="text-xl font-bold text-gray-900">
+                                                    <h3 className="text-xl font-bold text-gray-900 break-words">
                                                         {job.jobTitle || 'Job Title'}
                                                     </h3>
                                                 </div>
 
-                                                <p className="text-gray-600 mb-4 line-clamp-2">
+                                                <p className="text-gray-600 mb-4 line-clamp-2 break-words overflow-hidden">
                                                     {job.jobDescription || 'No description available'}
                                                 </p>
 
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                                                    <div className="flex items-center space-x-2 text-gray-600">
+                                                    <div className="flex items-center space-x-2 text-gray-600 min-w-0">
                                                         <Building className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm">
+                                                        <span className="text-sm truncate">
                                                             {job.postedBy?.name || 'Company Name'}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center space-x-2 text-gray-600">
+                                                    <div className="flex items-center space-x-2 text-gray-600 min-w-0">
                                                         <MapPin className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm">{job.location || 'Location not specified'}</span>
+                                                        <span className="text-sm truncate">{job.location || 'Location not specified'}</span>
                                                     </div>
-                                                    <div className="flex items-center space-x-2 text-gray-600">
+                                                    <div className="flex items-center space-x-2 text-gray-600 min-w-0">
                                                         <Clock className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm">
+                                                        <span className="text-sm truncate">
                                                             Applied {formatDate(job.applicationDetails?.appliedAt || job.datePosted)}
                                                         </span>
                                                     </div>
@@ -673,7 +679,7 @@ const Page = () => {
                         )}
                     </div>
                 )}
-c
+
                 {/* Recommended Jobs Tab */}
                 {activeTab === 'recommended' && (
                     <div className="animate-fade-in">

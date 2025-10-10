@@ -26,7 +26,7 @@ const Page = () => {
     const fetchJobApplications = async () => {
       setIsLoading(true);
       try {
-        const userId = getUserId();
+        const userId = localStorage.getItem("userId");
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${jobId}/applications?userId=${userId}`, {
           headers: {
