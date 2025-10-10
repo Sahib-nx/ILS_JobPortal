@@ -520,10 +520,6 @@ const JobDetailPage = ({ jobId }) => {
                         setApplicationData(prev => ({ ...prev, phone: value }));
                       }
                     }}
-                    onBlur={(e) => {
-                      // Validate on blur (when user leaves the field)
-                      const digits = e.target.value.replace(/\D/g, '');
-                    }}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     placeholder="+91 98765 43210"
                   />
