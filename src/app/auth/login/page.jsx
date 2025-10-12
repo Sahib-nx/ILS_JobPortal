@@ -218,7 +218,7 @@ const LoginPage = () => {
                 alt="Google"
                 className="w-5 h-5"
               />
-              <span>Sign up with Google</span>
+              <span>Sign in with Google</span>
             </button>
           </div>
 

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building, Edit, X } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+// import { useSearchParams } from 'next/navigation';
+
 
 const Page = () => {
     const [userDetails, setUserDetails] = useState(null);
@@ -15,14 +16,14 @@ const Page = () => {
     const [showPreferenceDialog, setShowPreferenceDialog] = useState(false);
     const [selectedPreferences, setSelectedPreferences] = useState([]);
 
-    const searchParams = useSearchParams();
-
     const availablePreferences = ['Engineering', 'Design', 'Marketing', 'Product', 'Data'];
 
-    useEffect(() => {
-        const tab = searchParams.get('tab');
-        if (tab) setActiveTab(tab);
-    }, [searchParams]);
+    // const searchParams = useSearchParams();
+
+    // useEffect(() => {
+    //     const tab = searchParams.get('tab');
+    //     if (tab) setActiveTab(tab);
+    // }, [searchParams]);
 
     useEffect(() => {
         const userId = localStorage.getItem("userId");
@@ -500,6 +501,7 @@ const Page = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+
                 {/* Profile Tab */}
                 {activeTab === 'profile' && (
                     <div className="animate-fade-in">
@@ -599,7 +601,7 @@ const Page = () => {
                     </div>
                 )}
 
-{/* Applications Tab */}
+                {/* Applications Tab */}
                 {activeTab === 'applications' && (
                     <div className="animate-fade-in">
                         <div className="flex items-center justify-between mb-8">

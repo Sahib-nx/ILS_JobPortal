@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  ArrowLeft, MapPin, Clock, Users, Eye, Send, Upload, AlertCircle,
+  ArrowLeft, MapPin, Clock, Send, Upload, AlertCircle,
   Briefcase, Calendar, Loader2, Share2, Building2, Star, CheckCircle, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -172,7 +172,8 @@ const JobDetailPage = ({ jobId }) => {
           email: '',
           phone: '',
         });
-        window.location.href = "/user?tab=applications"
+        // window.location.href = "/user?tab=applications"
+        window.location.href = "/user"
       } else {
         // Error case
         const errorMessage = result.error || result.message || 'Application failed. Please try again.';

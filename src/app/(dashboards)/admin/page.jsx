@@ -11,8 +11,9 @@ const Page = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [authError, setAuthError] = useState(null);
 
-  const userId = localStorage.getItem("userId");
+
   useEffect(() => {
+    const userId = localStorage.getItem("userId");
     // User authentication check
     if (!userId) {
       // Redirect to login if no valid token
@@ -123,7 +124,7 @@ const Page = () => {
   }
 
   // Authentication error state
-  if (authError || !userId || localStorage.getItem("userRole") !== 'Admin') {
+  if (authError || !localStorage.getItem("userId") || localStorage.getItem("userRole") !== 'Admin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-lg shadow-lg max-w-md mx-4">
