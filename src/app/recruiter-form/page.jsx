@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Building2, Mail, MapPin, Phone, Globe, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { getUserId } from '../utils';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -45,11 +44,11 @@ const CompanyRegistrationForm = () => {
       return;
     }
 
-    if(localStorage.getItem("userRole") === "Recruiter") {
+    if (localStorage.getItem("userRole") === "Recruiter") {
       window.location.href = "/recruiter"
       toast.error("You are already a Recruiter!!")
       return;
-     }
+    }
 
     // Prevent browser/phone back button
     const handlePopState = () => {
@@ -321,8 +320,8 @@ const CompanyRegistrationForm = () => {
                       onChange={handleChange}
                       placeholder={field.placeholder}
                       className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl text-gray-900 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-0 ${errors[field.name]
-                          ? 'border-red-300 focus:border-red-500 bg-red-50'
-                          : 'border-gray-200 focus:border-indigo-500 focus:bg-white hover:border-gray-300'
+                        ? 'border-red-300 focus:border-red-500 bg-red-50'
+                        : 'border-gray-200 focus:border-indigo-500 focus:bg-white hover:border-gray-300'
                         }`}
                     />
                   </div>
@@ -357,8 +356,8 @@ const CompanyRegistrationForm = () => {
                   placeholder="Describe your company, services, culture, and what makes you unique... (minimum 50 characters)"
                   rows="4"
                   className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl text-gray-900 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-0 resize-none ${errors.companyDetails
-                      ? 'border-red-300 focus:border-red-500 bg-red-50'
-                      : 'border-gray-200 focus:border-indigo-500 focus:bg-white hover:border-gray-300'
+                    ? 'border-red-300 focus:border-red-500 bg-red-50'
+                    : 'border-gray-200 focus:border-indigo-500 focus:bg-white hover:border-gray-300'
                     }`}
                 />
               </div>
@@ -380,8 +379,8 @@ const CompanyRegistrationForm = () => {
             {/* Status Message */}
             {submitStatus && (
               <div className={`p-4 rounded-xl flex items-center space-x-3 ${submitStatus.type === 'success'
-                  ? 'bg-green-50 border border-green-200 text-green-800'
-                  : 'bg-red-50 border border-red-200 text-red-800'
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : 'bg-red-50 border border-red-200 text-red-800'
                 }`} style={{ animation: 'fadeIn 0.5s ease-out' }}>
                 {submitStatus.type === 'success' ? (
                   <CheckCircle className="w-5 h-5 text-green-600" />
@@ -396,8 +395,8 @@ const CompanyRegistrationForm = () => {
               onClick={handleSubmit}
               disabled={isLoading || Object.keys(errors).length > 0}
               className={`w-full py-4 px-8 rounded-xl font-semibold text-white text-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:transform-none ${isLoading || Object.keys(errors).length > 0
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 shadow-lg hover:shadow-xl'
                 }`}
             >
               {isLoading ? (

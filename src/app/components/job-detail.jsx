@@ -172,8 +172,8 @@ const JobDetailPage = ({ jobId }) => {
           email: '',
           phone: '',
         });
-        // window.location.href = "/user?tab=applications"
-        window.location.href = "/user"
+        window.location.href = "/user?tab=applications"
+        // window.location.href = "/user"
       } else {
         // Error case
         const errorMessage = result.error || result.message || 'Application failed. Please try again.';
