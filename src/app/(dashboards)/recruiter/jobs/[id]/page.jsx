@@ -7,7 +7,6 @@ import {
   Loader2, X, CheckCircle, UserCheck, UserPlus
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { getUserId } from '../../../../utils';
 
 const Page = () => {
   const [jobData, setJobData] = useState(null);

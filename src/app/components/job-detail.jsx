@@ -1,9 +1,9 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, MapPin, Clock, Send, Upload, AlertCircle,
-  Briefcase, Calendar, Loader2, Share2, Building2, Star, CheckCircle, X
+  Briefcase, Calendar, Loader2, Share2, Building2, Star, CheckCircle, X, ChevronDown, Search
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -20,6 +20,15 @@ const JobDetailPage = ({ jobId }) => {
     email: '',
     phone: '',
   });
+
+  // Phone input states
+  const [countries, setCountries] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isLoadingCountries, setIsLoadingCountries] = useState(true);
+  const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   // Helper function to safely render user/poster information
   const renderPostedBy = (postedByData) => {
@@ -43,6 +52,163 @@ const JobDetailPage = ({ jobId }) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Fetch countries from REST Countries API
+  useEffect(() => {
+    const fetchCountries = async () => {
+      setIsLoadingCountries(true);
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch countries');
+        }
+        
+        const data = await response.json();
+        
+        // Check if data is an array
+        if (!Array.isArray(data)) {
+          console.error('Expected array but got:', typeof data);
+          throw new Error('Invalid data format');
+        }
+        
+        const formattedCountries = data
+          .map(country => {
+            try {
+              return {
+                name: country.name?.common || 'Unknown',
+                code: country.cca2 || '',
+                dialCode: country.idd?.root 
+                  ? `${country.idd.root}${country.idd.suffixes?.[0] || ''}`
+                  : '',
+                flag: country.flags?.svg || country.flags?.png || 'https://flagcdn.com/xx.svg',
+              };
+            } catch (err) {
+              console.error('Error processing country:', err);
+              return null;
+            }
+          })
+          .filter(country => country !== null && country.dialCode && country.code)
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        if (formattedCountries.length === 0) {
+          throw new Error('No valid countries found');
+        }
+
+        setCountries(formattedCountries);
+        
+        // Set India as default
+        const india = formattedCountries.find(c => c.code === 'IN');
+        if (india) {
+          setSelectedCountry(india);
+        } else {
+          setSelectedCountry(formattedCountries[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+        // Fallback to comprehensive basic data
+        const fallback = [
+          { name: 'India', code: 'IN', dialCode: '+91', flag: 'https://flagcdn.com/in.svg' },
+          { name: 'United States', code: 'US', dialCode: '+1', flag: 'https://flagcdn.com/us.svg' },
+          { name: 'United Kingdom', code: 'GB', dialCode: '+44', flag: 'https://flagcdn.com/gb.svg' },
+          { name: 'Canada', code: 'CA', dialCode: '+1', flag: 'https://flagcdn.com/ca.svg' },
+          { name: 'Australia', code: 'AU', dialCode: '+61', flag: 'https://flagcdn.com/au.svg' },
+          { name: 'Germany', code: 'DE', dialCode: '+49', flag: 'https://flagcdn.com/de.svg' },
+          { name: 'France', code: 'FR', dialCode: '+33', flag: 'https://flagcdn.com/fr.svg' },
+          { name: 'China', code: 'CN', dialCode: '+86', flag: 'https://flagcdn.com/cn.svg' },
+          { name: 'Japan', code: 'JP', dialCode: '+81', flag: 'https://flagcdn.com/jp.svg' },
+          { name: 'South Korea', code: 'KR', dialCode: '+82', flag: 'https://flagcdn.com/kr.svg' },
+          { name: 'Brazil', code: 'BR', dialCode: '+55', flag: 'https://flagcdn.com/br.svg' },
+          { name: 'Mexico', code: 'MX', dialCode: '+52', flag: 'https://flagcdn.com/mx.svg' },
+          { name: 'Russia', code: 'RU', dialCode: '+7', flag: 'https://flagcdn.com/ru.svg' },
+          { name: 'Singapore', code: 'SG', dialCode: '+65', flag: 'https://flagcdn.com/sg.svg' },
+          { name: 'United Arab Emirates', code: 'AE', dialCode: '+971', flag: 'https://flagcdn.com/ae.svg' },
+          { name: 'Saudi Arabia', code: 'SA', dialCode: '+966', flag: 'https://flagcdn.com/sa.svg' },
+          { name: 'Pakistan', code: 'PK', dialCode: '+92', flag: 'https://flagcdn.com/pk.svg' },
+          { name: 'Bangladesh', code: 'BD', dialCode: '+880', flag: 'https://flagcdn.com/bd.svg' },
+          { name: 'Sri Lanka', code: 'LK', dialCode: '+94', flag: 'https://flagcdn.com/lk.svg' },
+          { name: 'Nepal', code: 'NP', dialCode: '+977', flag: 'https://flagcdn.com/np.svg' },
+        ];
+        setCountries(fallback);
+        setSelectedCountry(fallback[0]);
+      } finally {
+        setIsLoadingCountries(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowCountryDropdown(false);
+        setCountrySearch('');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (showCountryDropdown && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+  }, [showCountryDropdown]);
+
+  // Filter countries based on search
+  const filteredCountries = countries.filter(country => 
+    country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    country.dialCode.includes(countrySearch) ||
+    country.code.toLowerCase().includes(countrySearch.toLowerCase())
+  );
+
+  // Handle country selection
+  const handleCountrySelect = (country) => {
+    setSelectedCountry(country);
+    setShowCountryDropdown(false);
+    setCountrySearch('');
+    
+    // Update phone with dial code if phone is empty
+    if (!applicationData.phone || applicationData.phone.trim() === '') {
+      setApplicationData(prev => ({ ...prev, phone: '' }));
+    }
+  };
+
+  // Handle phone input change
+  const handlePhoneChange = (e) => {
+    let value = e.target.value;
+    
+    // If pasted with country code, try to detect country
+    if (value.startsWith('+') && value.length > 2) {
+      // Extract potential dial code
+      const potentialCode = value.substring(0, 4);
+      const matchingCountry = countries.find(c => 
+        potentialCode.startsWith(c.dialCode)
+      );
+      
+      if (matchingCountry && matchingCountry.code !== selectedCountry?.code) {
+        setSelectedCountry(matchingCountry);
+        // Remove dial code from input since it's shown separately
+        value = value.substring(matchingCountry.dialCode.length).trim();
+      }
+    }
+    
+    // Allow only numbers, spaces, and + sign
+    if (/^[0-9\s+]*$/.test(value)) {
+      setApplicationData(prev => ({ ...prev, phone: value }));
+    }
+  };
+
+  // Get full phone number with country code
+  const getFullPhoneNumber = () => {
+    if (!selectedCountry || !applicationData.phone) return '';
+    const cleanPhone = applicationData.phone.replace(/\D/g, '');
+    return `${selectedCountry.dialCode}${cleanPhone}`;
   };
 
   // Get current user from localStorage
@@ -117,13 +283,14 @@ const JobDetailPage = ({ jobId }) => {
     try {
       const formData = new FormData();
       formData.append('email', applicationData.email);
-      formData.append('phone', applicationData.phone);
+      formData.append('phone', getFullPhoneNumber());
 
       if (applicationData.resume) {
         formData.append('resume', applicationData.resume);
       }
 
       console.log('Submitting application with userId:', user.id);
+      console.log('Full phone number:', getFullPhoneNumber());
       console.log('API URL:', `${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${jobId}/apply/${user.id}`);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/job/${jobId}/apply/${user.id}`, {
@@ -137,11 +304,9 @@ const JobDetailPage = ({ jobId }) => {
       console.log('Response status:', response.status);
       console.log('Response headers:', response.headers);
 
-      // Get response text first
       const responseText = await response.text();
       console.log('Raw response:', responseText);
 
-      // Try to parse as JSON
       let result;
       try {
         result = JSON.parse(responseText);
@@ -149,7 +314,6 @@ const JobDetailPage = ({ jobId }) => {
         console.error('Failed to parse response as JSON:', parseError);
         console.error('Response was:', responseText);
 
-        // Check if it's an HTML error page
         if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
           alert('Server error: The server returned an HTML page instead of data. Please check the API endpoint or contact support.');
         } else {
@@ -160,31 +324,26 @@ const JobDetailPage = ({ jobId }) => {
       }
 
       if (response.ok && result.message) {
-        // Success case
         setShowApplicationForm(false);
         toast.success("Application submitted successfully!");
-        // alert(result.message || 'Application submitted successfully!');
         console.log('Application successful:', result);
 
-        // Reset form
         setApplicationData({
           resume: null,
           email: '',
           phone: '',
         });
         window.location.href = "/user?tab=applications"
-        // window.location.href = "/user"
       } else {
-        // Error case
         const errorMessage = result.error || result.message || 'Application failed. Please try again.';
-        alert(errorMessage);
-        console.error('Application error:', result);
+        // alert(errorMessage);
+        toast.error(errorMessage);
+        // console.error('Application error:', result);
       }
 
     } catch (error) {
       console.error('Network/Request error:', error);
 
-      // Handle network errors
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         alert('Network error. Please check your connection and try again.');
       } else {
@@ -195,7 +354,6 @@ const JobDetailPage = ({ jobId }) => {
     }
   };
 
-  //resume change
   const handleResumeChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -207,7 +365,8 @@ const JobDetailPage = ({ jobId }) => {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Only PDF, DOC, DOCX allowed.');
+      // alert('Invalid file type. Only PDF, DOC, DOCX allowed.');
+      toast.error('Invalid file type. Only PDF, DOC, DOCX allowed.')
       e.target.value = '';
       return;
     }
@@ -228,7 +387,6 @@ const JobDetailPage = ({ jobId }) => {
     setApplicationData(prev => ({ ...prev, resume: file }));
   };
 
-  // Remove selected file
   const handleRemoveFile = () => {
     setApplicationData(prev => ({ ...prev, resume: null }));
     setFileError('');
@@ -236,7 +394,6 @@ const JobDetailPage = ({ jobId }) => {
     if (fileInput) fileInput.value = '';
   };
 
-  // Share job posting
   const handleShareJob = () => {
     if (navigator.share) {
       navigator.share({
@@ -250,7 +407,6 @@ const JobDetailPage = ({ jobId }) => {
     }
   };
 
-  // Loading state
   if (isUserLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
@@ -270,7 +426,6 @@ const JobDetailPage = ({ jobId }) => {
     );
   }
 
-  // Error state
   if (!job) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
@@ -293,7 +448,6 @@ const JobDetailPage = ({ jobId }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
@@ -324,9 +478,7 @@ const JobDetailPage = ({ jobId }) => {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6 lg:space-y-8">
-            {/* Job Header Card */}
             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-gray-100">
               <div className="mb-6">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight break-words">
@@ -338,7 +490,6 @@ const JobDetailPage = ({ jobId }) => {
                 </div>
               </div>
 
-              {/* Job Meta Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
                   <div className="flex items-center space-x-3">
@@ -394,7 +545,6 @@ const JobDetailPage = ({ jobId }) => {
               </div>
             </div>
 
-            {/* Job Description */}
             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-gray-100">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center">
                 <Briefcase className="w-6 h-6 mr-3 text-blue-500 flex-shrink-0" />
@@ -411,7 +561,6 @@ const JobDetailPage = ({ jobId }) => {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Quick Overview</h3>
@@ -440,7 +589,6 @@ const JobDetailPage = ({ jobId }) => {
                 </div>
               </div>
 
-              {/* Apply Button */}
               <button
                 onClick={() => {
                   if (!user) {
@@ -463,11 +611,9 @@ const JobDetailPage = ({ jobId }) => {
         </div>
       </main>
 
-      {/* Application Modal */}
       {showApplicationForm && user && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-            {/* Modal Header */}
             <div className="flex items-center justify-between mb-8">
               <div className="min-w-0 flex-1 pr-4">
                 <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">Apply for Position</h3>
@@ -490,7 +636,6 @@ const JobDetailPage = ({ jobId }) => {
               </button>
             </div>
 
-            {/* Application Form */}
             <form onSubmit={handleJobApplication} className="space-y-6">
               <div className="grid sm:grid-cols-2 gap-6">
                 <div>
@@ -511,24 +656,102 @@ const JobDetailPage = ({ jobId }) => {
                   <label className="block text-sm font-semibold text-gray-900 mb-3">
                     Phone Number
                   </label>
-                  <input
-                    type="tel"
-                    value={applicationData.phone}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow only numbers, spaces, and + sign
-                      if (/^[0-9\s+]*$/.test(value)) {
-                        setApplicationData(prev => ({ ...prev, phone: value }));
-                      }
-                    }}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                    placeholder="+91 98765 43210"
-                  />
-                  {applicationData.phone && applicationData.phone.replace(/\D/g, '').length < 10 && (
-                    <p className="text-red-500 text-sm mt-1">
-                      Phone number must be at least 10 digits
-                    </p>
-                  )}
+                  <div className="relative">
+                    <div className="flex">
+                      <div ref={dropdownRef} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                          disabled={isLoadingCountries}
+                          className="flex items-center space-x-2 px-3 py-3 border border-r-0 border-gray-200 rounded-l-xl bg-gray-50 hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        >
+                          {isLoadingCountries ? (
+                            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                          ) : selectedCountry ? (
+                            <>
+                              <img 
+                                src={selectedCountry.flag} 
+                                alt={selectedCountry.name}
+                                className="w-6 h-4 object-cover rounded"
+                              />
+                              <span className="text-sm font-medium text-gray-700">
+                                {selectedCountry.dialCode}
+                              </span>
+                              <ChevronDown className="w-4 h-4 text-gray-500" />
+                            </>
+                          ) : (
+                            <span className="text-sm text-gray-500">Select</span>
+                          )}
+                        </button>
+
+                        {showCountryDropdown && !isLoadingCountries && (
+                          <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden flex flex-col">
+                            <div className="p-3 border-b border-gray-100 sticky top-0 bg-white">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  ref={searchInputRef}
+                                  type="text"
+                                  value={countrySearch}
+                                  onChange={(e) => setCountrySearch(e.target.value)}
+                                  placeholder="Search country..."
+                                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                />
+                              </div>
+                            </div>
+                            <div className="overflow-y-auto">
+                              {filteredCountries.length === 0 ? (
+                                <div className="p-4 text-center text-gray-500">
+                                  No countries found
+                                </div>
+                              ) : (
+                                filteredCountries.map((country) => (
+                                  <button
+                                    key={country.code}
+                                    type="button"
+                                    onClick={() => handleCountrySelect(country)}
+                                    className={`w-full flex items-center space-x-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left ${
+                                      selectedCountry?.code === country.code ? 'bg-blue-50' : ''
+                                    }`}
+                                  >
+                                    <img 
+                                      src={country.flag} 
+                                      alt={country.name}
+                                      className="w-6 h-4 object-cover rounded flex-shrink-0"
+                                    />
+                                    <span className="flex-1 text-gray-900 font-medium truncate">
+                                      {country.name}
+                                    </span>
+                                    <span className="text-gray-600 text-sm font-mono flex-shrink-0">
+                                      {country.dialCode}
+                                    </span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <input
+                        type="tel"
+                        value={applicationData.phone}
+                        onChange={handlePhoneChange}
+                        className="flex-1 px-4 py-2 ms-0.5 border border-gray-200 rounded-r-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                        placeholder="98765 43210"
+                      />
+                    </div>
+                    {applicationData.phone && applicationData.phone.replace(/\D/g, '').length > 0 && applicationData.phone.replace(/\D/g, '').length < 7 && (
+                      <p className="text-red-500 text-sm mt-1">
+                        Phone number seems too short
+                      </p>
+                    )}
+                    {applicationData.phone && (
+                      <p className="text-gray-500 text-xs mt-1">
+                        Full number: {getFullPhoneNumber()}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -537,7 +760,6 @@ const JobDetailPage = ({ jobId }) => {
                   Resume/CV *
                 </label>
 
-                {/* File Upload Area */}
                 <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${fileError ? 'border-red-300 bg-red-50' :
                   applicationData.resume ? 'border-green-300 bg-green-50' :
                     'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
@@ -582,7 +804,6 @@ const JobDetailPage = ({ jobId }) => {
                   )}
                 </div>
 
-                {/* File Error Display */}
                 {fileError && (
                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
                     <p className="text-red-700 text-sm flex items-center">
@@ -592,7 +813,6 @@ const JobDetailPage = ({ jobId }) => {
                   </div>
                 )}
 
-                {/* File Requirements */}
                 <div className="mt-3 text-xs text-gray-500">
                   <p>• Supported formats: PDF, DOC, DOCX</p>
                   <p>• Maximum file size: 10MB</p>
@@ -612,7 +832,6 @@ const JobDetailPage = ({ jobId }) => {
                 </label>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
                 <button
                   type="button"

@@ -79,7 +79,8 @@ const Page = () => {
             if (response.ok) {
                 setSuccess(true);
                 setTimeout(() => {
-                    window.location.href = `/recruiter/jobs/${id}`;
+                    // window.location.href = `/recruiter/jobs/${id}`;
+                    window.location.href = "/recruiter"
                 }, 2000);
             } else {
                 const errorData = await response.json();
