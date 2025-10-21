@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Building2, Mail, Phone, Calendar, User, MapPin, Eye } from 'lucide-react';
+import { Search, Filter, Building2, Mail, Phone, Calendar, User, MapPin, Eye, FileText } from 'lucide-react';
 
 const Page = () => {
   const [recruiters, setRecruiters] = useState([]);
@@ -164,6 +164,13 @@ const Page = () => {
                   Total Requests: {recruiters.length}
                 </span>
               </div>
+              <button
+                onClick={() => window.location.href = '/admin/resume'}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 w-full sm:w-auto flex items-center justify-center space-x-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>View Resumes</span>
+              </button>
               <button
                 onClick={refreshRecruiters}
                 disabled={loading}

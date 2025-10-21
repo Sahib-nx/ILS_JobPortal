@@ -1,8 +1,10 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building, Edit, X } from 'lucide-react';
+import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building, Edit, X, Upload } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { UploadResumeDialog } from './upload-resume-dailog';
+
 
 export const UserDashboard = () => {
     const [userDetails, setUserDetails] = useState(null);
@@ -14,6 +16,8 @@ export const UserDashboard = () => {
     const [authError, setAuthError] = useState(null);
     const [showPreferenceDialog, setShowPreferenceDialog] = useState(false);
     const [selectedPreferences, setSelectedPreferences] = useState([]);
+    const [showUploadResumeDialog, setShowUploadResumeDialog] = useState(false);
+    const [uploadedResume, setUploadedResume] = useState(null);
 
     const availablePreferences = ['Engineering', 'Design', 'Marketing', 'Product', 'Data'];
     const searchParams = useSearchParams();
@@ -23,7 +27,6 @@ export const UserDashboard = () => {
         if (tab) setActiveTab(tab);
     }, [searchParams]);
 
-
     useEffect(() => {
         const userId = localStorage.getItem("userId");
         if (!userId) {
@@ -31,7 +34,6 @@ export const UserDashboard = () => {
             return;
         }
 
-        // Check if preference exists in localStorage
         const existingPreference = localStorage.getItem('prefrence');
         if (!existingPreference) {
             setShowPreferenceDialog(true);
@@ -89,7 +91,6 @@ export const UserDashboard = () => {
         localStorage.setItem('prefrence', preferencesString);
         setShowPreferenceDialog(false);
 
-        // Update recommended jobs without reloading
         const preferences = selectedPreferences;
         const appliedJobIds = appliedJobs.map(job => job._id || job.id || job.jobId);
         const availableJobs = allJobs.filter(job =>
@@ -113,7 +114,6 @@ export const UserDashboard = () => {
         } else {
             localStorage.setItem('prefrence', updatedPrefs.join(','));
 
-            // Update recommended jobs without reloading
             const preferences = updatedPrefs;
             const appliedJobIds = appliedJobs.map(job => job._id || job.id || job.jobId);
             const availableJobs = allJobs.filter(job =>
@@ -225,6 +225,49 @@ export const UserDashboard = () => {
         }
     };
 
+    const handleDeleteResume = async () => {
+        const confirmDelete = window.confirm('Are you sure you want to delete your resume?');
+        if (!confirmDelete) return;
+
+        try {
+            const userId = localStorage.getItem("userId");
+            const authToken = localStorage.getItem("authToken");
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}/resume`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete resume');
+            }
+
+            setUploadedResume(null);
+            
+            setUserDetails(prev => ({
+                ...prev,
+                resume: null
+            }));
+
+            alert('Resume deleted successfully');
+        } catch (error) {
+            console.error('Error deleting resume:', error);
+            alert('Failed to delete resume. Please try again.');
+        }
+    };
+
+    const handleResumeUploadSuccess = (resumeData) => {
+        console.log('Resume upload success, received data:', resumeData);
+        setUploadedResume(resumeData);
+        setUserDetails(prev => ({
+            ...prev,
+            resume: resumeData
+        }));
+        setShowUploadResumeDialog(false);
+    };
+
     useEffect(() => {
         const currentUserId = localStorage.getItem("userId");
         const authToken = localStorage.getItem("authToken");
@@ -254,6 +297,10 @@ export const UserDashboard = () => {
 
                 const userDetailsData = await safeJsonParse(userResponse);
                 setUserDetails(userDetailsData);
+                
+                if (userDetailsData?.resume) {
+                    setUploadedResume(userDetailsData.resume);
+                }
 
                 const jobsResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${currentUserId}/applications`, {
                     headers: headers
@@ -389,11 +436,17 @@ export const UserDashboard = () => {
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
-            {/* Preference Selection Dialog */}
+            <UploadResumeDialog 
+                isOpen={showUploadResumeDialog}
+                onClose={() => setShowUploadResumeDialog(false)}
+                userId={localStorage.getItem("userId")}
+                authToken={localStorage.getItem("authToken")}
+                onUploadSuccess={handleResumeUploadSuccess}
+            />
+
             {showPreferenceDialog && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full relative animate-fade-in overflow-hidden">
-                        {/* Header Section with Gradient */}
                         <div className="bg-gradient-to-r from-[#1c398e] to-indigo-900 px-8 py-6">
                             <div className="flex items-center justify-center mb-3">
                                 <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
@@ -408,9 +461,7 @@ export const UserDashboard = () => {
                             </p>
                         </div>
 
-                        {/* Content Section */}
                         <div className="p-8">
-                            {/* Info Badge */}
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                                 <div className="flex items-start space-x-3">
                                     <div className="flex-shrink-0 mt-0.5">
@@ -429,7 +480,6 @@ export const UserDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Preferences Grid */}
                             <div className="space-y-3 mb-6">
                                 {availablePreferences.map((preference) => {
                                     const isSelected = selectedPreferences.includes(preference);
@@ -462,7 +512,6 @@ export const UserDashboard = () => {
                                 })}
                             </div>
 
-                            {/* Action Buttons */}
                             <button
                                 onClick={handleSavePreferences}
                                 disabled={selectedPreferences.length === 0}
@@ -533,7 +582,6 @@ export const UserDashboard = () => {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
 
-                {/* Profile Tab */}
                 {activeTab === 'profile' && (
                     <div className="animate-fade-in">
                         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -543,23 +591,33 @@ export const UserDashboard = () => {
                                         <h2 className="text-2xl font-bold text-white">Profile Information</h2>
                                         <p className="text-blue-100 mt-1">Manage your personal details and preferences</p>
                                     </div>
-                                    <button
-                                        onClick={() => window.location.href = '/user/edit'}
-                                        className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 shadow-sm hover:shadow-md"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                        <span className="hidden sm:inline">Edit Profile</span>
-                                        <span className="sm:hidden">Edit</span>
-                                    </button>
+                                    <div className="flex items-center space-x-3">
+                                        <button
+                                            onClick={() => setShowUploadResumeDialog(true)}
+                                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                                        >
+                                            <Upload className="h-4 w-4" />
+                                            <span className="hidden sm:inline">{uploadedResume ? 'Update Resume' : 'Upload Resume'}</span>
+                                            <span className="sm:hidden">{uploadedResume ? 'Update' : 'Upload'}</span>
+                                        </button>
+                                        <button
+                                            onClick={() => window.location.href = '/user/edit'}
+                                            className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 shadow-sm hover:shadow-md"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Edit Profile</span>
+                                            <span className="sm:hidden">Edit</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="p-8">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                     <div className="lg:col-span-2 space-y-6">
-                                        <div className="flex items-start space-x-6 p-6 bg-gray-50 rounded-xl">
-                                            <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <User className="h-10 w-10 text-blue-600" />
+                                        <div className="flex items-start space-x-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                                            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                                <User className="h-10 w-10 text-white" />
                                             </div>
                                             <div className="flex-1">
                                                 <h3 className="text-xl font-semibold text-gray-900">{userDetails?.name}</h3>
@@ -571,37 +629,101 @@ export const UserDashboard = () => {
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            <div className="p-4 border border-gray-200 rounded-xl">
+                                            <div className="p-5 border-2 border-gray-200 rounded-xl hover:border-blue-300 transition-colors bg-gradient-to-br from-white to-gray-50">
                                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                                                     Email Address
                                                 </label>
                                                 <p className="text-gray-900 font-medium">{userDetails?.email}</p>
                                             </div>
 
-                                            <div className="p-4 border border-gray-200 rounded-xl">
+                                            <div className="p-5 border-2 border-gray-200 rounded-xl hover:border-blue-300 transition-colors bg-gradient-to-br from-white to-gray-50">
                                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                                                     Role
                                                 </label>
                                                 <p className="text-gray-900 font-medium">{userDetails?.role || 'Job Seeker'}</p>
                                             </div>
                                         </div>
+
+                                        {uploadedResume && (
+                                            <div className="p-6 border-2 border-blue-200 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-md transition-all">
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="p-3 bg-blue-500 rounded-lg">
+                                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                                                Uploaded Resume
+                                                            </label>
+                                                            <p className="text-gray-900 font-medium truncate max-w-xs">
+                                                                {uploadedResume.originalName || uploadedResume.fileName || 'Resume.pdf'}
+                                                            </p>
+                                                            {uploadedResume.uploadedAt && (
+                                                                <p className="text-xs text-gray-500 mt-1">
+                                                                    Uploaded on {formatDate(uploadedResume.uploadedAt || new Date().toISOString())}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={handleDeleteResume}
+                                                        className="p-2 hover:bg-red-100 rounded-lg transition-colors group"
+                                                        title="Delete resume"
+                                                    >
+                                                        <X className="h-5 w-5 text-red-600 group-hover:text-red-700" />
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 mt-3">
+                                                    {uploadedResume.fileUrl && (
+                                                        <a
+                                                            href={uploadedResume.fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            <span>View Resume</span>
+                                                        </a>
+                                                    )}
+                                                    {uploadedResume.fileSize && (
+                                                        <span className="px-3 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-lg">
+                                                            {(uploadedResume.fileSize / 1024).toFixed(2)} KB
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-6">
-                                        <div className="p-6 border border-gray-200 rounded-xl">
+                                        <div className="p-6 border-2 border-gray-200 rounded-xl bg-gradient-to-br from-white to-blue-50 hover:shadow-md transition-shadow">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="text-lg font-semibold text-gray-900">Job Preferences</h4>
+                                                <button
+                                                    onClick={() => {
+                                                        localStorage.removeItem('prefrence');
+                                                        setShowPreferenceDialog(true);
+                                                    }}
+                                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                                                >
+                                                    Edit
+                                                </button>
                                             </div>
                                             <div className="space-y-3">
                                                 {getUserPreferences().length > 0 ? (
                                                     getUserPreferences().map((pref, index) => (
                                                         <div
                                                             key={index}
-                                                            className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200 group"
+                                                            className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 group hover:shadow-sm transition-all"
                                                         >
                                                             <span className="font-medium text-blue-900">{pref}</span>
                                                             <div className="flex items-center space-x-2">
-                                                                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Active</span>
+                                                                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full font-medium">Active</span>
                                                                 <button
                                                                     onClick={() => handleRemovePreference(pref)}
                                                                     className="p-1 hover:bg-red-100 rounded-full transition-colors opacity-100"
@@ -618,12 +740,19 @@ export const UserDashboard = () => {
                                             </div>
                                         </div>
 
-                                        <div className="p-6 bg-green-50 border border-green-200 rounded-xl">
-                                            <h4 className="text-sm font-semibold text-green-800 mb-2">Profile Status</h4>
+                                        <div className={`p-6 border-2 rounded-xl hover:shadow-md transition-shadow ${uploadedResume ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' : 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200'}`}>
+                                            <h4 className={`text-sm font-semibold mb-2 ${uploadedResume ? 'text-green-800' : 'text-yellow-800'}`}>Profile Status</h4>
                                             <div className="flex items-center space-x-2">
-                                                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                                                <span className="text-sm text-green-700">Profile Complete</span>
+                                                <div className={`h-2 w-2 rounded-full animate-pulse ${uploadedResume ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                                                <span className={`text-sm font-medium ${uploadedResume ? 'text-green-700' : 'text-yellow-700'}`}>
+                                                    {uploadedResume ? 'Profile Complete' : 'Profile Incomplete'}
+                                                </span>
                                             </div>
+                                            {!uploadedResume && (
+                                                <p className="text-xs text-yellow-600 mt-2">
+                                                    Upload your resume to complete your profile
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -633,7 +762,6 @@ export const UserDashboard = () => {
                 )}
 
 
-                {/* Applications Tab */}
                 {activeTab === 'applications' && (
                     <div className="animate-fade-in">
                         <div className="flex items-center justify-between mb-8">
@@ -714,7 +842,6 @@ export const UserDashboard = () => {
                     </div>
                 )}
 
-                {/* Recommended Jobs Tab */}
                 {activeTab === 'recommended' && (
                     <div className="animate-fade-in">
                         <div className="flex items-center justify-between mb-8">

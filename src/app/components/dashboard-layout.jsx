@@ -184,7 +184,7 @@ const Navigation = ({ isLoaded }) => {
                                 className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white p-2 flex gap-2 rounded-lg hover:shadow-lg transition-all duration-300"
                                 title={`Go to ${userRole} dashboard`}>
                                 <User className="w-5 h-5" />
-                                <span>Dashboard</span>
+                                <span>{localStorage.getItem("name")}</span>
                             </button>
                         ) :
                             <button
