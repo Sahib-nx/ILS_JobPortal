@@ -1,7 +1,9 @@
+"use client"
+
 import React, { useState } from 'react';
 import { Upload, X, FileText, Check, AlertCircle } from 'lucide-react';
 
-export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken }) => {
+export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken, onUploadSuccess }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [resumeFilter, setResumeFilter] = useState('');
     const [isDragging, setIsDragging] = useState(false);
@@ -100,16 +102,44 @@ export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken }) => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                showToast(errorData.message || 'Upload failed');
+                throw new Error(errorData.message || 'Upload failed');
             }
 
             const data = await response.json();
+            console.log('✅ Upload response data:', data);
+            
             setUploadStatus('success');
             showToast('Resume uploaded successfully!', 'success');
 
+            // After successful upload, fetch the updated user data to get resume details
+            if (onUploadSuccess) {
+                try {
+                    // Fetch updated user data from the server
+                    const userResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        console.log('✅ Fetched updated user data:', userData);
+                        
+                        if (userData.resume) {
+                            console.log('✅ Resume found, updating UI:', userData.resume);
+                            onUploadSuccess(userData.resume);
+                        } else {
+                            console.warn('⚠️ No resume in user data');
+                        }
+                    }
+                } catch (fetchError) {
+                    console.error('Error fetching updated user data:', fetchError);
+                }
+            }
+
             setTimeout(() => {
                 handleClose();
-            }, 2000);
+            }, 1500);
 
         } catch (error) {
             console.error('Upload error:', error);
