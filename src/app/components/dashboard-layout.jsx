@@ -149,6 +149,7 @@ const Navigation = ({ isLoaded }) => {
         }
     };
 
+
     return (
         <nav className={`bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-50 transition-all duration-700 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
             }`}>
@@ -529,6 +530,7 @@ const EmptyState = ({ onReset }) => (
 const JobSeekersLanding = () => {
     const [isLoaded, setIsLoaded] = useState(false);
     const { jobs, loading, error, refetch } = useJobs();
+    const [isCheckingRole, setIsCheckingRole] = useState(true);
     const {
         searchTerm,
         setSearchTerm,
@@ -537,6 +539,16 @@ const JobSeekersLanding = () => {
         filteredJobs,
         resetFilters
     } = useFilters(jobs);
+
+    useEffect(() => {
+        const userRole = localStorage.getItem("userRole");
+        if (userRole === "User" || userRole === "Recruiter") {
+            window.location.href = "/user";
+        } else {
+            setIsCheckingRole(false);
+        }
+    }, []);
+
     useEffect(() => {
         if (!loading) {
             setIsLoaded(true);
@@ -558,6 +570,9 @@ const JobSeekersLanding = () => {
 
     if (loading) {
         return <LoadingSkeleton />;
+    }
+    if (isCheckingRole) {
+        return <LoadingSkeleton />
     }
 
     return (

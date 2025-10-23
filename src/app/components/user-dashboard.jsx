@@ -1,10 +1,34 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, Star, MapPin, Clock, ArrowLeft, Building, Edit, X, Upload } from 'lucide-react';
+import { User, Briefcase, Star, MapPin, Clock, Building, Edit, X, Upload, LayoutDashboard } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { UploadResumeDialog } from './upload-resume-dailog';
+import toast from 'react-hot-toast';
+import WarningBox from './warning-box';
 
+// Cookie utility functions
+const setCookie = (name, value, days = 365) => {
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + date.toUTCString();
+    document.cookie = name + "=" + value + ";" + expires + ";path=/;SameSite=Lax";
+};
+
+const getCookie = (name) => {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+};
+
+const deleteCookie = (name) => {
+    document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+};
 
 export const UserDashboard = () => {
     const [userDetails, setUserDetails] = useState(null);
@@ -18,6 +42,7 @@ export const UserDashboard = () => {
     const [selectedPreferences, setSelectedPreferences] = useState([]);
     const [showUploadResumeDialog, setShowUploadResumeDialog] = useState(false);
     const [uploadedResume, setUploadedResume] = useState(null);
+    const [showWarning, setShowWarning] = useState(false);
 
     const availablePreferences = ['Engineering', 'Design', 'Marketing', 'Product', 'Data'];
     const searchParams = useSearchParams();
@@ -34,7 +59,7 @@ export const UserDashboard = () => {
             return;
         }
 
-        const existingPreference = localStorage.getItem('prefrence');
+        const existingPreference = getCookie('userPreferences');
         if (!existingPreference) {
             setShowPreferenceDialog(true);
         }
@@ -46,8 +71,8 @@ export const UserDashboard = () => {
         if (typeof window === 'undefined') return [];
 
         try {
-            const prefs = localStorage.getItem('prefrence');
-            console.log("Raw preferences from localStorage:", prefs);
+            const prefs = getCookie('userPreferences');
+            console.log("Raw preferences from cookie:", prefs);
 
             if (prefs) {
                 const userPrefs = prefs.includes(',')
@@ -88,7 +113,7 @@ export const UserDashboard = () => {
         }
 
         const preferencesString = selectedPreferences.join(',');
-        localStorage.setItem('prefrence', preferencesString);
+        setCookie('userPreferences', preferencesString, 365);
         setShowPreferenceDialog(false);
 
         const preferences = selectedPreferences;
@@ -108,11 +133,11 @@ export const UserDashboard = () => {
         if (updatedPrefs.length === 0) {
             const confirmRemoval = window.confirm('Removing all preferences will require you to set new ones. Continue?');
             if (confirmRemoval) {
-                localStorage.removeItem('prefrence');
+                deleteCookie('userPreferences');
                 setShowPreferenceDialog(true);
             }
         } else {
-            localStorage.setItem('prefrence', updatedPrefs.join(','));
+            setCookie('userPreferences', updatedPrefs.join(','), 365);
 
             const preferences = updatedPrefs;
             const appliedJobIds = appliedJobs.map(job => job._id || job.id || job.jobId);
@@ -225,38 +250,46 @@ export const UserDashboard = () => {
         }
     };
 
-    const handleDeleteResume = async () => {
-        const confirmDelete = window.confirm('Are you sure you want to delete your resume?');
-        if (!confirmDelete) return;
 
+    const handleDeleteResume = async () => {
         try {
             const userId = localStorage.getItem("userId");
             const authToken = localStorage.getItem("authToken");
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}/resume`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}/remove`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
                 }
-            });
+            );
 
             if (!response.ok) {
-                throw new Error('Failed to delete resume');
+                toast.error("Failed to delete resume");
+                setShowWarning(false);
+                return;
             }
 
-            setUploadedResume(null);
+            const data = await response.json();
 
-            setUserDetails(prev => ({
+            setUploadedResume(null);
+            setUserDetails((prev) => ({
                 ...prev,
-                resume: null
+                resume: null,
             }));
 
-            alert('Resume deleted successfully');
+            toast.success(data.message || "Resume deleted successfully");
+
         } catch (error) {
-            console.error('Error deleting resume:', error);
-            alert('Failed to delete resume. Please try again.');
+            console.error("Error deleting resume:", error);
+            toast.error("Failed to delete resume. Please try again.");
+        } finally {
+            setShowWarning(false);
         }
     };
+
 
     const handleResumeUploadSuccess = (resumeData) => {
         console.log('Resume upload success, received data:', resumeData);
@@ -266,6 +299,12 @@ export const UserDashboard = () => {
             resume: resumeData
         }));
         setShowUploadResumeDialog(false);
+        
+        if(uploadedResume !== null) {
+        toast.success("Resume updated successfully!")
+        } else {
+            toast.success("Resume uploaded successfully!")
+        }
     };
 
     useEffect(() => {
@@ -436,6 +475,13 @@ export const UserDashboard = () => {
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
+
+            <WarningBox
+                show={showWarning}
+                message="Are you sure you want to remove your resume? This action cannot be undone."
+                onConfirm={handleDeleteResume}
+                onCancel={() => setShowWarning(false)}
+            />
             <UploadResumeDialog
                 isOpen={showUploadResumeDialog}
                 onClose={() => setShowUploadResumeDialog(false)}
@@ -447,7 +493,14 @@ export const UserDashboard = () => {
             {showPreferenceDialog && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full relative animate-fade-in overflow-hidden">
-                        <div className="bg-gradient-to-r from-[#1c398e] to-indigo-900 px-8 py-6">
+                        <div className="bg-gradient-to-r from-[#1c398e] to-indigo-900 px-8 py-6 relative">
+                            <button
+                                onClick={() => setShowPreferenceDialog(false)}
+                                className="absolute top-4 right-4 p-1 hover:bg-white hover:text-blue-800 rounded-full transition-colors opacity-100"
+                                title="Remove preferenceDialog"
+                            >
+                                <X className="h-7 w-7 text-shadow-white" />
+                            </button>
                             <div className="flex items-center justify-center mb-3">
                                 <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                                     <Star className="w-8 h-8 text-white" />
@@ -530,30 +583,38 @@ export const UserDashboard = () => {
                 </div>
             )}
 
-            <header className="shadow-lg" style={{ backgroundColor: '#1c398e' }}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+            <header className="relative overflow-hidden shadow-lg" style={{ backgroundColor: '#1c398e' }}>
+                {/* Decorative background elements */}
+                <div className="absolute inset-0 opacity-10">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
                     <div className="flex items-center justify-between">
+                        {/* Left section - Welcome message */}
                         <div className="flex items-center space-x-4">
-                            <button
-                                onClick={() => window.location.href = "/jobs-landing"}
-                                className="p-1 sm:p-3 hover:bg-blue-500 rounded-xl transition-colors"
-                            >
-                                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white-700" />
-                            </button>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">Welcome back, {userDetails?.name}</h1>
+                                <h1 className="text-2xl font-bold text-white">Welcome back, {userDetails?.name}👋</h1>
                                 <p className="text-blue-200">{userDetails?.role || 'Job Seeker'}</p>
                             </div>
                         </div>
+
+                        {/* Right section - Dashboard info */}
                         <div className="hidden md:block">
-                            <div className="text-white/90 text-sm">
-                                <p className="font-medium">Dashboard</p>
-                                <p>Manage your job applications</p>
+                            <div className="flex items-center space-x-3">
+                                <LayoutDashboard className="w-8 h-8 text-white/90" />
+                                <div className="text-white/90 text-sm">
+                                    <h1 className="text-2xl font-semibold">My Dashboard</h1>
+                                    <p className="text-sm text-blue-100">Overview & application insights</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </header>
+
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
                 <div className="bg-white rounded-lg shadow-sm p-1 mb-8">
@@ -581,22 +642,15 @@ export const UserDashboard = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-
-
-
                 {activeTab === 'profile' && (
                     <div className="animate-fade-in">
                         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-
-                           
                             <div className="px-8 py-6" style={{ backgroundColor: '#1c398e' }}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h2 className="text-2xl font-bold text-white">Profile Information</h2>
                                         <p className="text-blue-100 mt-1">Manage your personal details and preferences</p>
                                     </div>
-
-                                    
                                     <div className="hidden md:flex items-center space-x-3">
                                         <button
                                             onClick={() => setShowUploadResumeDialog(true)}
@@ -614,8 +668,6 @@ export const UserDashboard = () => {
                                         </button>
                                     </div>
                                 </div>
-
-                                
                                 <div className="flex md:hidden flex-col gap-2 mt-4">
                                     <button
                                         onClick={() => setShowUploadResumeDialog(true)}
@@ -633,9 +685,7 @@ export const UserDashboard = () => {
                                     </button>
                                 </div>
                             </div>
-                            
 
-                            
                             <div className="p-8">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                     <div className="lg:col-span-2 space-y-6">
@@ -692,7 +742,7 @@ export const UserDashboard = () => {
                                                         </div>
                                                     </div>
                                                     <button
-                                                        onClick={handleDeleteResume}
+                                                        onClick={() => setShowWarning(true)}
                                                         className="p-2 hover:bg-red-100 rounded-lg transition-colors group"
                                                         title="Delete resume"
                                                     >
@@ -730,7 +780,7 @@ export const UserDashboard = () => {
                                                 <h4 className="text-lg font-semibold text-gray-900">Job Preferences</h4>
                                                 <button
                                                     onClick={() => {
-                                                        localStorage.removeItem('prefrence');
+                                                        deleteCookie('userPreferences');
                                                         setShowPreferenceDialog(true);
                                                     }}
                                                     className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"

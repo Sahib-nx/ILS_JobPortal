@@ -106,10 +106,10 @@ export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken, onUploa
             }
 
             const data = await response.json();
-            console.log('✅ Upload response data:', data);
-            
+
             setUploadStatus('success');
-            showToast('Resume uploaded successfully!', 'success');
+
+            // showToast('Resume uploaded successfully!', 'success');
 
             // After successful upload, fetch the updated user data to get resume details
             if (onUploadSuccess) {
@@ -124,7 +124,7 @@ export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken, onUploa
                     if (userResponse.ok) {
                         const userData = await userResponse.json();
                         console.log('✅ Fetched updated user data:', userData);
-                        
+
                         if (userData.resume) {
                             console.log('✅ Resume found, updating UI:', userData.resume);
                             onUploadSuccess(userData.resume);
@@ -170,20 +170,18 @@ export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken, onUploa
             {/* Toast Notification */}
             {toast && (
                 <div className="fixed top-4 right-4 z-[60] animate-slide-in">
-                    <div className={`flex items-start space-x-3 px-6 py-4 rounded-xl shadow-2xl border-l-4 ${
-                        toast.type === 'success' 
-                            ? 'bg-green-50 border-green-500' 
-                            : 'bg-red-50 border-red-500'
-                    }`}>
+                    <div className={`flex items-start space-x-3 px-6 py-4 rounded-xl shadow-2xl border-l-4 ${toast.type === 'success'
+                        ? 'bg-green-50 border-green-500'
+                        : 'bg-red-50 border-red-500'
+                        }`}>
                         {toast.type === 'success' ? (
                             <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                         ) : (
                             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                         )}
                         <div className="flex-1">
-                            <p className={`text-sm font-medium ${
-                                toast.type === 'success' ? 'text-green-900' : 'text-red-900'
-                            }`}>
+                            <p className={`text-sm font-medium ${toast.type === 'success' ? 'text-green-900' : 'text-red-900'
+                                }`}>
                                 {toast.message}
                             </p>
                         </div>
@@ -194,7 +192,7 @@ export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken, onUploa
             {/* Dialog Overlay */}
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full relative overflow-hidden animate-scale-in">
-                    
+
                     {/* Header */}
                     <div className="bg-gradient-to-r from-[#1c398e] to-indigo-900 px-8 py-6 relative overflow-hidden">
                         <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
@@ -222,7 +220,7 @@ export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken, onUploa
 
                     {/* Content */}
                     <div className="p-8 space-y-6">
-                        
+
                         {/* Resume Category Selection */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-900 mb-3">
@@ -255,17 +253,16 @@ export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken, onUploa
                             <label className="block text-sm font-semibold text-gray-900 mb-3">
                                 Resume File <span className="text-red-500">*</span>
                             </label>
-                            
+
                             {!selectedFile ? (
                                 <div
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
-                                    className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
-                                        isDragging 
-                                            ? 'border-blue-500 bg-blue-50 scale-[1.02]' 
-                                            : 'border-gray-300 hover:border-gray-400 bg-gray-50'
-                                    }`}
+                                    className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDragging
+                                        ? 'border-blue-500 bg-blue-50 scale-[1.02]'
+                                        : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+                                        }`}
                                 >
                                     <input
                                         type="file"
@@ -274,7 +271,7 @@ export const UploadResumeDialog = ({ isOpen, onClose, userId, authToken, onUploa
                                         disabled={isUploading}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                                     />
-                                    
+
                                     <div className="pointer-events-none">
                                         <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                                             <Upload className="w-8 h-8 text-blue-600" />

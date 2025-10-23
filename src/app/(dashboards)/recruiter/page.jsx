@@ -262,7 +262,7 @@ const RecruiterDashboard = () => {
                   ILS
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-xl font-bold text-[#1c398e]">Welcome {localStorage.getItem("name")}</h1>
+                  <h1 className="text-xl font-bold text-[#1c398e]">Welcome {localStorage.getItem("name")}👋</h1>
                   <p className="text-xs text-blue-600">{localStorage.getItem("userRole")}</p>
                 </div>
               </div>
