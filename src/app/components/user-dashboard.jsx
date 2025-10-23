@@ -7,29 +7,6 @@ import { UploadResumeDialog } from './upload-resume-dailog';
 import toast from 'react-hot-toast';
 import WarningBox from './warning-box';
 
-// Cookie utility functions
-const setCookie = (name, value, days = 365) => {
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-    const expires = "expires=" + date.toUTCString();
-    document.cookie = name + "=" + value + ";" + expires + ";path=/;SameSite=Lax";
-};
-
-const getCookie = (name) => {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-};
-
-const deleteCookie = (name) => {
-    document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-};
-
 export const UserDashboard = () => {
     const [userDetails, setUserDetails] = useState(null);
     const [appliedJobs, setAppliedJobs] = useState([]);
@@ -59,11 +36,6 @@ export const UserDashboard = () => {
             return;
         }
 
-        const existingPreference = getCookie('userPreferences');
-        if (!existingPreference) {
-            setShowPreferenceDialog(true);
-        }
-
         console.log(userId);
     }, []);
 
@@ -71,16 +43,13 @@ export const UserDashboard = () => {
         if (typeof window === 'undefined') return [];
 
         try {
-            const prefs = getCookie('userPreferences');
-            console.log("Raw preferences from cookie:", prefs);
+            const prefs = localStorage.getItem('userPreferences');
+            console.log("Raw preferences from localStorage:", prefs);
 
             if (prefs) {
-                const userPrefs = prefs.includes(',')
-                    ? prefs.split(',').map(p => p.trim()).filter(p => p.length > 0)
-                    : [prefs.trim()];
-
+                const userPrefs = JSON.parse(prefs);
                 console.log("Processed preferences:", userPrefs);
-                return userPrefs.length > 0 ? userPrefs : [];
+                return Array.isArray(userPrefs) ? userPrefs : [];
             }
 
             return [];
@@ -101,53 +70,179 @@ export const UserDashboard = () => {
         });
     };
 
-    const handleSavePreferences = () => {
+    const handleSavePreferences = async () => {
         if (selectedPreferences.length === 0) {
-            alert('Please select at least one preference');
+            toast.error('Please select at least one preference');
             return;
         }
 
         if (selectedPreferences.length > 3) {
-            alert('Please select maximum 3 preferences');
+            toast.error('Please select maximum 3 preferences');
             return;
         }
 
-        const preferencesString = selectedPreferences.join(',');
-        setCookie('userPreferences', preferencesString, 365);
-        setShowPreferenceDialog(false);
+        try {
+            const userId = localStorage.getItem("userId");
+            const authToken = localStorage.getItem("authToken");
 
-        const preferences = selectedPreferences;
-        const appliedJobIds = appliedJobs.map(job => job._id || job.id || job.jobId);
-        const availableJobs = allJobs.filter(job =>
-            !appliedJobIds.includes(job._id || job.id)
-        );
-        const recommended = getRecommendedJobs(availableJobs, preferences);
-        const sortedRecommendedJobs = sortJobsByDate(recommended, 'datePosted');
-        setRecommendedJobs(sortedRecommendedJobs);
+            console.log("Saving preferences to DB:", selectedPreferences);
+
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}/edit`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({
+                        preference: selectedPreferences,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error("Failed to save preferences:", errorData);
+                throw new Error("Failed to save preferences");
+            }
+
+            const data = await response.json();
+            console.log("Preferences saved successfully in DB:", data);
+
+            // Store in localStorage
+            localStorage.setItem('userPreferences', JSON.stringify(selectedPreferences));
+
+            // Update user details
+            setUserDetails(prev => ({
+                ...prev,
+                preference: selectedPreferences
+            }));
+
+            setShowPreferenceDialog(false);
+            toast.success("Preferences saved successfully!");
+
+            // Update recommended jobs
+            const appliedJobIds = appliedJobs.map(job => job._id || job.id || job.jobId);
+            const availableJobs = allJobs.filter(job =>
+                !appliedJobIds.includes(job._id || job.id)
+            );
+            const recommended = getRecommendedJobs(availableJobs, selectedPreferences);
+            const sortedRecommendedJobs = sortJobsByDate(recommended, 'datePosted');
+            setRecommendedJobs(sortedRecommendedJobs);
+
+        } catch (error) {
+            console.error("Error saving preferences:", error);
+            toast.error("Failed to save preferences. Please try again.");
+        }
     };
 
-    const handleRemovePreference = (prefToRemove) => {
+    const handleRemovePreference = async (prefToRemove) => {
         const currentPrefs = getUserPreferences();
         const updatedPrefs = currentPrefs.filter(p => p !== prefToRemove);
 
         if (updatedPrefs.length === 0) {
             const confirmRemoval = window.confirm('Removing all preferences will require you to set new ones. Continue?');
-            if (confirmRemoval) {
-                deleteCookie('userPreferences');
+            if (!confirmRemoval) return;
+
+            try {
+                const userId = localStorage.getItem("userId");
+                const authToken = localStorage.getItem("authToken");
+
+                console.log("Removing all preferences from DB");
+
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}/edit`,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${authToken}`,
+                        },
+                        body: JSON.stringify({
+                            preference: [],
+                        }),
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorData = await response.text();
+                    console.error("Failed to remove preferences:", errorData);
+                    throw new Error("Failed to remove preferences");
+                }
+
+                const data = await response.json();
+                console.log("All preferences removed from DB:", data);
+
+                localStorage.removeItem('userPreferences');
+                setUserDetails(prev => ({
+                    ...prev,
+                    preference: []
+                }));
                 setShowPreferenceDialog(true);
+                toast.success("All preferences removed");
+
+            } catch (error) {
+                console.error("Error removing preferences:", error);
+                toast.error("Failed to remove preferences. Please try again.");
             }
         } else {
-            setCookie('userPreferences', updatedPrefs.join(','), 365);
+            try {
+                const userId = localStorage.getItem("userId");
+                const authToken = localStorage.getItem("authToken");
 
-            const preferences = updatedPrefs;
-            const appliedJobIds = appliedJobs.map(job => job._id || job.id || job.jobId);
-            const availableJobs = allJobs.filter(job =>
-                !appliedJobIds.includes(job._id || job.id)
-            );
-            const recommended = getRecommendedJobs(availableJobs, preferences);
-            const sortedRecommendedJobs = sortJobsByDate(recommended, 'datePosted');
-            setRecommendedJobs(sortedRecommendedJobs);
+                console.log("Updating preferences in DB:", updatedPrefs);
+
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/${userId}/edit`,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${authToken}`,
+                        },
+                        body: JSON.stringify({
+                            preference: updatedPrefs,
+                        }),
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorData = await response.text();
+                    console.error("Failed to update preferences:", errorData);
+                    throw new Error("Failed to update preferences");
+                }
+
+                const data = await response.json();
+                console.log("Preferences updated in DB:", data);
+
+                localStorage.setItem('userPreferences', JSON.stringify(updatedPrefs));
+                setUserDetails(prev => ({
+                    ...prev,
+                    preference: updatedPrefs
+                }));
+
+                const appliedJobIds = appliedJobs.map(job => job._id || job.id || job.jobId);
+                const availableJobs = allJobs.filter(job =>
+                    !appliedJobIds.includes(job._id || job.id)
+                );
+                const recommended = getRecommendedJobs(availableJobs, updatedPrefs);
+                const sortedRecommendedJobs = sortJobsByDate(recommended, 'datePosted');
+                setRecommendedJobs(sortedRecommendedJobs);
+
+                toast.success("Preference removed successfully");
+
+            } catch (error) {
+                console.error("Error updating preferences:", error);
+                toast.error("Failed to update preferences. Please try again.");
+            }
         }
+    };
+
+    const handleEditPreferences = () => {
+        const currentPrefs = getUserPreferences();
+        setSelectedPreferences(currentPrefs);
+        setShowPreferenceDialog(true);
     };
 
     const getRecommendedJobs = (jobs, preferences) => {
@@ -250,7 +345,6 @@ export const UserDashboard = () => {
         }
     };
 
-
     const handleDeleteResume = async () => {
         try {
             const userId = localStorage.getItem("userId");
@@ -290,7 +384,6 @@ export const UserDashboard = () => {
         }
     };
 
-
     const handleResumeUploadSuccess = (resumeData) => {
         console.log('Resume upload success, received data:', resumeData);
         setUploadedResume(resumeData);
@@ -299,9 +392,9 @@ export const UserDashboard = () => {
             resume: resumeData
         }));
         setShowUploadResumeDialog(false);
-        
-        if(uploadedResume !== null) {
-        toast.success("Resume updated successfully!")
+
+        if (uploadedResume !== null) {
+            toast.success("Resume updated successfully!")
         } else {
             toast.success("Resume uploaded successfully!")
         }
@@ -336,6 +429,18 @@ export const UserDashboard = () => {
 
                 const userDetailsData = await safeJsonParse(userResponse);
                 setUserDetails(userDetailsData);
+
+                // Handle preferences from DB
+                if (userDetailsData?.preference && Array.isArray(userDetailsData.preference) && userDetailsData.preference.length > 0) {
+                    console.log("User preferences from DB:", userDetailsData.preference);
+                    localStorage.setItem('userPreferences', JSON.stringify(userDetailsData.preference));
+                } else {
+                    // No preferences in DB, show dialog
+                    const localPrefs = localStorage.getItem('userPreferences');
+                    if (!localPrefs) {
+                        setShowPreferenceDialog(true);
+                    }
+                }
 
                 if (userDetailsData?.resume) {
                     setUploadedResume(userDetailsData.resume);
@@ -493,14 +598,15 @@ export const UserDashboard = () => {
             {showPreferenceDialog && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full relative animate-fade-in overflow-hidden">
+                        <button
+                            onClick={() => setShowPreferenceDialog(false)}
+                            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200 flex items-center justify-center group"
+                            aria-label="Close dialog"
+                        >
+                            < X className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+                        </button>
+
                         <div className="bg-gradient-to-r from-[#1c398e] to-indigo-900 px-8 py-6 relative">
-                            <button
-                                onClick={() => setShowPreferenceDialog(false)}
-                                className="absolute top-4 right-4 p-1 hover:bg-white hover:text-blue-800 rounded-full transition-colors opacity-100"
-                                title="Remove preferenceDialog"
-                            >
-                                <X className="h-7 w-7 text-shadow-white" />
-                            </button>
                             <div className="flex items-center justify-center mb-3">
                                 <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                                     <Star className="w-8 h-8 text-white" />
@@ -583,17 +689,13 @@ export const UserDashboard = () => {
                 </div>
             )}
 
-
             <header className="relative overflow-hidden shadow-lg" style={{ backgroundColor: '#1c398e' }}>
-                {/* Decorative background elements */}
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
                 </div>
-
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
                     <div className="flex items-center justify-between">
-                        {/* Left section - Welcome message */}
                         <div className="flex items-center space-x-4">
                             <div>
                                 <h1 className="text-2xl font-bold text-white">Welcome back, {userDetails?.name}👋</h1>
@@ -601,20 +703,42 @@ export const UserDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Right section - Dashboard info */}
-                        <div className="hidden md:block">
-                            <div className="flex items-center space-x-3">
-                                <LayoutDashboard className="w-8 h-8 text-white/90" />
-                                <div className="text-white/90 text-sm">
-                                    <h1 className="text-2xl font-semibold">My Dashboard</h1>
-                                    <p className="text-sm text-blue-100">Overview & application insights</p>
+                        <div className="flex items-center space-x-4">
+                            <div className="hidden md:block">
+                                <div className="flex items-center space-x-3">
+                                    <LayoutDashboard className="w-8 h-8 text-white/90" />
+                                    <div className="text-white/90 text-sm">
+                                        <h1 className="text-2xl font-semibold">My Dashboard</h1>
+                                        <p className="text-sm text-blue-100">Overview & application insights</p>
+                                    </div>
                                 </div>
                             </div>
+
+                            <button
+                                onClick={() => {
+                                    localStorage.clear();
+                                    window.location.href = '/';
+                                }}
+                                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-all duration-200 border border-white/20 hover:border-white/30 group"
+                                aria-label="Logout"
+                            >
+                                <svg
+                                    className="w-5 h-5 text-white group-hover:scale-110 transition-transform"
+                                    fill="none"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                                <span className="text-white font-medium hidden sm:inline">Logout</span>
+                            </button>
                         </div>
                     </div>
                 </div>
             </header>
-
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
                 <div className="bg-white rounded-lg shadow-sm p-1 mb-8">
@@ -779,10 +903,7 @@ export const UserDashboard = () => {
                                             <div className="flex items-center justify-between mb-4">
                                                 <h4 className="text-lg font-semibold text-gray-900">Job Preferences</h4>
                                                 <button
-                                                    onClick={() => {
-                                                        deleteCookie('userPreferences');
-                                                        setShowPreferenceDialog(true);
-                                                    }}
+                                                    onClick={handleEditPreferences}
                                                     className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"
                                                 >
                                                     Edit

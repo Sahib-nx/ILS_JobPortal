@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Building2, Mail, Phone, Calendar, User, MapPin, Eye, FileText } from 'lucide-react';
+import { Search, Filter, Building2, Mail, Phone, Calendar, User, MapPin, Eye, FileText, Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Page = () => {
   const [recruiters, setRecruiters] = useState([]);
@@ -10,6 +11,21 @@ const Page = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [authError, setAuthError] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+
+  // Close mobile menu when screen size changes to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [mobileMenuOpen]);
+
 
 
   useEffect(() => {
@@ -112,6 +128,47 @@ const Page = () => {
     });
   };
 
+
+  // Animation variants for the mobile menu
+  const menuVariants = {
+    hidden: {
+      opacity: 0,
+      height: 0,
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
+    },
+    visible: {
+      opacity: 1,
+      height: "auto",
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: {
+      opacity: 1,
+      y: 0
+    },
+    visible: {
+      opacity: 1,
+      y: 0
+    }
+  };
+
+  const containerVariants = {
+    hidden: {
+      opacity: 1
+    },
+    visible: {
+      opacity: 1
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -148,40 +205,210 @@ const Page = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+
+
+
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="animate-fade-in">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Panel</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Manage and review recruiter registration requests
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 animate-slide-in w-full sm:w-auto">
-              <div className="bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
-                <span className="text-sm text-blue-600 font-medium">
-                  Total Requests: {recruiters.length}
-                </span>
+      <div className="bg-gradient-to-r from-white via-blue-50 to-white shadow-lg border-b-2 border-blue-200/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            {/* Left Section - Title and Description */}
+            <div className="animate-fade-in flex-1">
+              <div className="flex items-center justify-between w-full lg:w-auto">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#1c398e] to-[#3b82f6] rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <svg className="w-7 h-7" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                      <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#1c398e] to-[#3b82f6] bg-clip-text text-transparent">
+                      Admin Panel
+                    </h1>
+                    <p className="mt-1 text-sm text-gray-600 font-medium">
+                      Manage and review recruiter registration requests
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mobile Menu Button */}
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="lg:hidden p-2 text-[#1c398e] hover:bg-blue-100 rounded-lg transition-colors"
+                >
+                  {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
               </div>
-              <button
-                onClick={() => window.location.href = '/admin/resume'}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 w-full sm:w-auto flex items-center justify-center space-x-2"
-              >
-                <FileText className="w-4 h-4" />
-                <span>View Resumes</span>
-              </button>
-              <button
-                onClick={refreshRecruiters}
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 w-full sm:w-auto"
-              >
-                {loading ? 'Refreshing...' : 'Refresh'}
-              </button>
+            </div>
+
+            {/* Right Section - Stats and Actions (Desktop) */}
+            <div className="hidden lg:flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto animate-slide-in">
+              {/* Stats Badge */}
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <div className="flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <div>
+                    <p className="text-xs text-blue-100 font-medium">Total Requests</p>
+                    <p className="text-lg font-bold text-white">{recruiters.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Container */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* View Resumes Button */}
+                <button
+                  onClick={() => window.location.href = '/admin/resume'}
+                  className="group bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center justify-center space-x-2"
+                >
+                  <FileText className="w-4 h-4 transition-transform group-hover:rotate-12" />
+                  <span>View Resumes</span>
+                </button>
+
+                {/* Refresh Button */}
+                <button
+                  onClick={refreshRecruiters}
+                  disabled={loading}
+                  className="group bg-gradient-to-r from-[#1c398e] to-[#3b82f6] hover:from-[#2547a8] hover:to-[#4a90ff] disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center justify-center space-x-2 disabled:cursor-not-allowed"
+                >
+                  <svg
+                    className={`w-4 h-4 transition-transform ${loading ? 'animate-spin' : 'group-hover:rotate-180'}`}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
+
+                {/* Logout Button */}
+                <button
+                  onClick={() => {
+                    localStorage.clear();
+                    window.location.href = '/';
+                  }}
+                  className="group bg-white border-2 border-red-500 text-red-600 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center justify-center space-x-2"
+                >
+                  <svg
+                    className="w-4 h-4 transition-transform group-hover:translate-x-1"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                  </svg>
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Mobile Menu with Animation */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                variants={menuVariants}
+                className="lg:hidden overflow-hidden border-t border-blue-200 mt-4"
+              >
+                <motion.div
+                  variants={containerVariants}
+                  className="pt-4 space-y-3"
+                >
+                  {/* Stats Badge */}
+                  <motion.div
+                    variants={itemVariants}
+                    className="bg-gradient-to-br from-blue-500 to-blue-600 px-5 py-3 rounded-xl shadow-md"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                      <div>
+                        <p className="text-xs text-blue-100 font-medium">Total Requests</p>
+                        <p className="text-lg font-bold text-white">{recruiters.length}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* View Resumes Button */}
+                  <motion.button
+                    variants={itemVariants}
+                    onClick={() => {
+                      window.location.href = '/admin/resume';
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full group bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:shadow-lg flex items-center justify-center space-x-2"
+                  >
+                    <FileText className="w-5 h-5 transition-transform group-hover:rotate-12" />
+                    <span>View Resumes</span>
+                  </motion.button>
+
+                  {/* Refresh Button */}
+                  <motion.button
+                    variants={itemVariants}
+                    onClick={() => {
+                      refreshRecruiters();
+                      setMobileMenuOpen(false);
+                    }}
+                    disabled={loading}
+                    className="w-full group bg-gradient-to-r from-[#1c398e] to-[#3b82f6] hover:from-[#2547a8] hover:to-[#4a90ff] disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:shadow-lg flex items-center justify-center space-x-2 disabled:cursor-not-allowed"
+                  >
+                    <svg
+                      className={`w-5 h-5 transition-transform ${loading ? 'animate-spin' : 'group-hover:rotate-180'}`}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
+                  </motion.button>
+
+                  {/* Logout Button */}
+                  <motion.button
+                    variants={itemVariants}
+                    onClick={() => {
+                      localStorage.clear();
+                      window.location.href = '/';
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full group bg-white border-2 border-red-500 text-red-600 hover:bg-red-500 hover:text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:shadow-lg flex items-center justify-center space-x-2"
+                  >
+                    <svg
+                      className="w-5 h-5 transition-transform group-hover:translate-x-1"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span>Logout</span>
+                  </motion.button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
+
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Search and Filter Bar */}
@@ -223,6 +450,10 @@ const Page = () => {
             </div>
           </div>
         </div>
+
+
+
+
 
         {/* Recruiters Grid */}
         {filteredRecruiters.length === 0 ? (

@@ -11,6 +11,7 @@ const AdminResumeDashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedResume, setSelectedResume] = useState(null);
     const [resumeViewerError, setResumeViewerError] = useState(false);
+    const [displayCount, setDisplayCount] = useState(20);
 
     const filters = ['All', 'Engineering', 'Design', 'Marketing', 'Product', 'Data'];
 
@@ -20,6 +21,7 @@ const AdminResumeDashboard = () => {
 
     useEffect(() => {
         filterResumes();
+        setDisplayCount(20); // Reset display count when filters change
     }, [selectedFilter, searchTerm, resumes]);
 
     const fetchResumes = async () => {
@@ -130,11 +132,37 @@ const AdminResumeDashboard = () => {
         setResumeViewerError(false);
     };
 
+    const handleViewMore = () => {
+        setDisplayCount(prevCount => prevCount + 20);
+    };
+
+    const displayedResumes = filteredResumes.slice(0, displayCount);
+    const hasMore = displayCount < filteredResumes.length;
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 p-4 md:p-8">
             {/* Header */}
             <div className="max-w-7xl mx-auto mb-8">
                 <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 border-t-4 border-blue-700">
+                    {/* Back Button */}
+                    <button
+                        onClick={() => window.history.back()}
+                        className="group mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium transition-all duration-300 hover:gap-3"
+                    >
+                        <svg
+                            className="w-5 h-5 transition-transform group-hover:-translate-x-1"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        <span>Back</span>
+                    </button>
+
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div>
                             <h1 className="text-3xl md:text-4xl font-bold text-blue-900 mb-2">Resume Dashboard</h1>
@@ -143,7 +171,7 @@ const AdminResumeDashboard = () => {
                                 Manage and review all submitted resumes
                             </p>
                         </div>
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl shadow-md">
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl shadow-md transition-all duration-300 hover:scale-105">
                             <div className="text-sm opacity-90">Total Resumes</div>
                             <div className="text-3xl font-bold">{resumes.length}</div>
                         </div>
@@ -179,15 +207,15 @@ const AdminResumeDashboard = () => {
                                 key={filter}
                                 onClick={() => setSelectedFilter(filter)}
                                 className={`px-6 py-2.5 rounded-xl font-medium transition-all transform hover:scale-105 ${selectedFilter === filter
-                                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                                        : 'bg-blue-50 text-blue-900 hover:bg-blue-100'
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+                                    : 'bg-blue-50 text-blue-900 hover:bg-blue-100'
                                     }`}
                             >
                                 {filter}
                                 {filter !== 'All' && (
                                     <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${selectedFilter === filter
-                                            ? 'bg-white text-blue-900'
-                                            : 'bg-blue-200 text-blue-900'
+                                        ? 'bg-white text-blue-900'
+                                        : 'bg-blue-200 text-blue-900'
                                         }`}>
                                         {resumes.filter(r => r.resumeFilter === filter).length}
                                     </span>
@@ -201,7 +229,7 @@ const AdminResumeDashboard = () => {
             {/* Results Info */}
             <div className="max-w-7xl mx-auto mb-4">
                 <p className="text-gray-600 text-sm">
-                    Showing <span className="font-semibold text-blue-900">{filteredResumes.length}</span> of <span className="font-semibold">{resumes.length}</span> resumes
+                    Showing <span className="font-semibold text-blue-900">{displayedResumes.length}</span> of <span className="font-semibold">{filteredResumes.length}</span> resumes
                 </p>
             </div>
 
@@ -220,7 +248,7 @@ const AdminResumeDashboard = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredResumes.map((item) => (
+                        {displayedResumes.map((item) => (
                             <div
                                 key={item.id}
                                 className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 overflow-hidden border-2 border-transparent hover:border-blue-200"
@@ -264,6 +292,19 @@ const AdminResumeDashboard = () => {
                     </div>
                 )}
             </div>
+
+            {/* View More Button */}
+            {!loading && hasMore && (
+                <div className="max-w-7xl mx-auto mt-8 flex justify-center">
+                    <button
+                        onClick={handleViewMore}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2"
+                    >
+                        View More
+                        <Download size={18} className="rotate-90" />
+                    </button>
+                </div>
+            )}
 
             {/* Resume Viewer Modal */}
             {selectedResume && (
@@ -353,7 +394,7 @@ const AdminResumeDashboard = () => {
 
                             {/* Loading overlay */}
                             {!resumeViewerError && (
-                                <div 
+                                <div
                                     className="absolute inset-0 bg-white flex items-center justify-center pointer-events-none"
                                     style={{
                                         animation: 'fadeOut 3s forwards',

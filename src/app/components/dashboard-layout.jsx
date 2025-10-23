@@ -3,8 +3,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
     Search, MapPin, Clock, Users, Briefcase, TrendingUp,
-    Star, ChevronRight, Building, ArrowRight, Zap, AlertCircle, User
+    Star, ChevronRight, Building, ArrowRight, Zap, AlertCircle, User,
+    LogIn,
+    UserPlus,
+    Upload,
+    Menu,
+    X
 } from "lucide-react";
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Constants
 const CATEGORIES = [
@@ -120,20 +126,30 @@ const useFilters = (jobs) => {
         resetFilters
     };
 };
-
-// Components
 const Navigation = ({ isLoaded }) => {
     const [userRole, setUserRole] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('authToken');
         const role = localStorage.getItem('userRole');
 
-
         setIsLoggedIn(!!token);
         setUserRole(role);
     }, []);
+
+    // Close mobile menu when screen size changes to desktop
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 768 && mobileMenuOpen) {
+                setMobileMenuOpen(false);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [mobileMenuOpen]);
 
     const handleUserIconClick = () => {
         if (userRole === 'User') {
@@ -149,10 +165,51 @@ const Navigation = ({ isLoaded }) => {
         }
     };
 
+    // Animation variants for the mobile menu
+    const menuVariants = {
+        hidden: {
+            opacity: 0,
+            height: 0,
+            transition: {
+                duration: 0.3,
+                ease: "easeInOut"
+            }
+        },
+        visible: {
+            opacity: 1,
+            height: "auto",
+            transition: {
+                duration: 0.3,
+                ease: "easeInOut"
+            }
+        }
+    };
+
+    // Animation variants for menu items (stagger effect)
+    const itemVariants = {
+        hidden: {
+            opacity: 1,
+            y: 0
+        },
+        visible: {
+            opacity: 1,
+            y: 0
+        }
+    };
+
+    const containerVariants = {
+        hidden: {
+            opacity: 1
+        },
+        visible: {
+            opacity: 1
+        }
+    };
 
     return (
-        <nav className={`bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-50 transition-all duration-700 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-            }`}>
+        <nav className={`bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-50 transition-all duration-700 ${
+            isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+        }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center space-x-3">
@@ -165,65 +222,216 @@ const Navigation = ({ isLoaded }) => {
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 sm:space-x-3">
-                        {console.log('Rendering buttons - isLoggedIn:', isLoggedIn, 'userRole:', userRole)}
+                    {/* Desktop Navigation */}
+                    <div className="hidden md:flex items-center gap-3">
                         {!isLoggedIn ? (
-                            <button
-                                onClick={() => {
-                                    console.log('Login button clicked');
-                                    window.location.href = 'auth/login';
-                                }}
-                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-3 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base">
-                                Login
-                            </button>
-                        ) : userRole ? (
-                            <button
-                                onClick={() => {
-                                    console.log('User icon button clicked');
-                                    handleUserIconClick();
-                                }}
-                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white p-2 flex gap-2 rounded-lg hover:shadow-lg transition-all duration-300"
-                                title={`Go to ${userRole} dashboard`}>
-                                <User className="w-5 h-5" />
-                                <span>{localStorage.getItem("name")}</span>
-                            </button>
-                        ) :
-                            <button
-                                onClick={() => { window.location.href = "/recruiter-form" }}
-                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white p-2 flex gap-2 rounded-lg hover:shadow-lg transition-all duration-300"
-                            >
-                                <span>SubmitForm</span>
-                            </button>
-                        }
+                            <>
+                                <button
+                                    onClick={() => {
+                                        console.log('Login button clicked');
+                                        window.location.href = 'auth/login';
+                                    }}
+                                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-2 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 text-base font-medium flex items-center gap-2"
+                                >
+                                    <LogIn className="w-5 h-5" />
+                                    <span>Login</span>
+                                </button>
 
-                        {!isLoggedIn ? (
-                            <button
-                                onClick={() => {
-                                    console.log('Recruiter button clicked');
-                                    window.location.href = 'recruiter-form';
-                                }}
-                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-2 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base whitespace-nowrap">
-                                Recruiter
-                            </button>
-                        ) :
-                            <button
-                                onClick={() => {
-                                    localStorage.clear()
-                                    window.location.href = "/"
-                                }}
-                                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-2 sm:px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-sm sm:text-base whitespace-nowrap">
-                                Logout
-                            </button>
-                        }
+                                <button
+                                    onClick={() => {
+                                        console.log('Recruiter button clicked');
+                                        window.location.href = 'recruiter-form';
+                                    }}
+                                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-2 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 text-base font-medium flex items-center gap-2"
+                                >
+                                    <UserPlus className="w-5 h-5" />
+                                    <span>Join as Recruiter</span>
+                                </button>
 
+                                <button
+                                    onClick={() => {
+                                        window.location.href = '/auth/login';
+                                    }}
+                                    className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-2 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 text-base font-medium flex items-center gap-2"
+                                >
+                                    <Upload className="w-5 h-5" />
+                                    <span>Upload Resume</span>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                {userRole ? (
+                                    <button
+                                        onClick={() => {
+                                            console.log('User icon button clicked');
+                                            handleUserIconClick();
+                                        }}
+                                        className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-2 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 text-base font-medium flex items-center gap-2"
+                                        title={`Go to ${userRole} dashboard`}
+                                    >
+                                        <User className="w-5 h-5" />
+                                        <span className="max-w-[150px] truncate">{localStorage.getItem("name")}</span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            window.location.href = "/recruiter-form"
+                                        }}
+                                        className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-2 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 text-base font-medium flex items-center gap-2"
+                                    >
+                                        <UserPlus className="w-5 h-5" />
+                                        <span>Submit Form</span>
+                                    </button>
+                                )}
 
-
+                                <button
+                                    onClick={() => {
+                                        localStorage.clear();
+                                        window.location.href = "/";
+                                    }}
+                                    className="bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-2 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 text-base font-medium flex items-center gap-2"
+                                >
+                                    <svg
+                                        className="w-5 h-5"
+                                        fill="none"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                    </svg>
+                                    <span>Logout</span>
+                                </button>
+                            </>
+                        )}
                     </div>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="md:hidden p-2 text-[#1c398e] hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    </button>
                 </div>
+
+                {/* Mobile Menu with Animation */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            exit="hidden"
+                            variants={menuVariants}
+                            className="md:hidden overflow-hidden border-t border-blue-100"
+                        >
+                            <motion.div 
+                                variants={containerVariants}
+                                className="py-4 space-y-3"
+                            >
+                                {!isLoggedIn ? (
+                                    <>
+                                        <motion.button
+                                            variants={itemVariants}
+                                            onClick={() => {
+                                                window.location.href = 'auth/login';
+                                                setMobileMenuOpen(false);
+                                            }}
+                                            className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-medium flex items-center justify-center gap-3"
+                                        >
+                                            <LogIn className="w-5 h-5" />
+                                            <span>Login</span>
+                                        </motion.button>
+
+                                        <motion.button
+                                            variants={itemVariants}
+                                            onClick={() => {
+                                                window.location.href = 'recruiter-form';
+                                                setMobileMenuOpen(false);
+                                            }}
+                                            className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-medium flex items-center justify-center gap-3"
+                                        >
+                                            <UserPlus className="w-5 h-5" />
+                                            <span>Join as Recruiter</span>
+                                        </motion.button>
+
+                                        <motion.button
+                                            variants={itemVariants}
+                                            onClick={() => {
+                                                window.location.href = '/auth/login';
+                                                setMobileMenuOpen(false);
+                                            }}
+                                            className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-medium flex items-center justify-center gap-3"
+                                        >
+                                            <Upload className="w-5 h-5" />
+                                            <span>Upload Resume</span>
+                                        </motion.button>
+                                    </>
+                                ) : (
+                                    <>
+                                        {userRole ? (
+                                            <motion.button
+                                                variants={itemVariants}
+                                                onClick={() => {
+                                                    handleUserIconClick();
+                                                    setMobileMenuOpen(false);
+                                                }}
+                                                className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-medium flex items-center justify-center gap-3"
+                                                title={`Go to ${userRole} dashboard`}
+                                            >
+                                                <User className="w-5 h-5" />
+                                                <span className="truncate">{localStorage.getItem("name")} Dashboard</span>
+                                            </motion.button>
+                                        ) : (
+                                            <motion.button
+                                                variants={itemVariants}
+                                                onClick={() => {
+                                                    window.location.href = "/recruiter-form";
+                                                    setMobileMenuOpen(false);
+                                                }}
+                                                className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-medium flex items-center justify-center gap-3"
+                                            >
+                                                <UserPlus className="w-5 h-5" />
+                                                <span>Submit Form</span>
+                                            </motion.button>
+                                        )}
+
+                                        <motion.button
+                                            variants={itemVariants}
+                                            onClick={() => {
+                                                localStorage.clear();
+                                                window.location.href = "/";
+                                                setMobileMenuOpen(false);
+                                            }}
+                                            className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-medium flex items-center justify-center gap-3"
+                                        >
+                                            <svg
+                                                className="w-5 h-5"
+                                                fill="none"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                            </svg>
+                                            <span>Logout</span>
+                                        </motion.button>
+                                    </>
+                                )}
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </nav>
     );
 };
+
+
 
 const LoadingSkeleton = () => (
     <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white">
@@ -542,8 +750,10 @@ const JobSeekersLanding = () => {
 
     useEffect(() => {
         const userRole = localStorage.getItem("userRole");
-        if (userRole === "User" || userRole === "Recruiter") {
+        if (userRole === "User") {
             window.location.href = "/user";
+        } else if (userRole === "Recruiter") {
+            window.location.href = "/recruiter"
         } else {
             setIsCheckingRole(false);
         }

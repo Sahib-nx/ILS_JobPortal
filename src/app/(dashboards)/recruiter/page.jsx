@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Plus, Eye, Users, MapPin, Clock, Briefcase, Search,
-  Calendar, CheckCircle, Loader2, User, Edit, Trash2, ArrowLeft
+  Calendar, CheckCircle, Loader2, User, Edit, Trash2, Menu, X, ArrowLeft,
+  LogOut
 } from 'lucide-react';
 import { DeleteJobModal } from '@/app/components/delete-job-model';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const RecruiterDashboard = () => {
   const [jobs, setJobs] = useState([]);
@@ -20,6 +22,7 @@ const RecruiterDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, jobId: null, jobTitle: '' });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 
 
@@ -27,8 +30,6 @@ const RecruiterDashboard = () => {
     const userId = localStorage.getItem("userId")
     // User authentication check
     if (!userId) {
-      // Redirect to login if no valid token
-      // window.location.href = '/auth/login';
       return;
     }
     console.log(userId)
@@ -108,8 +109,6 @@ const RecruiterDashboard = () => {
     try {
       const userId = localStorage.getItem("userId");
       if (!userId) {
-        // setAuthError("User not authenticated")
-        // console.log('User not authenticated');
         setError("UserId Not Found!")
       }
 
@@ -168,14 +167,6 @@ const RecruiterDashboard = () => {
     } catch (error) {
       console.error('Error fetching admin data:', error);
       setError(error.message);
-
-      // // Handle authentication errors
-      // if (error.message.includes('Authentication') || error.message.includes('User not authenticated')) {
-      //   // Redirect to login after a delay
-      //   setTimeout(() => {
-      //     window.location.href = '/auth/login';
-      //   }, 2000);
-      // }
     } finally {
       setIsLoading(false);
     }
@@ -206,6 +197,51 @@ const RecruiterDashboard = () => {
 
   const closeDeleteModal = () => {
     setDeleteModal({ isOpen: false, jobId: null, jobTitle: '' });
+  };
+
+  // Animation variants for the mobile menu
+  const menuVariants = {
+    hidden: {
+      opacity: 0,
+      height: 0,
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
+    },
+    visible: {
+      opacity: 1,
+      height: "auto",
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
+    }
+  };
+
+  // Animation variants for menu items (stagger effect)
+  const itemVariants = {
+    hidden: {
+      opacity: 0,
+      y: -10
+    },
+    visible: {
+      opacity: 1,
+      y: 0
+    }
+  };
+
+  const containerVariants = {
+    hidden: {
+      opacity: 0
+    },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
   };
 
   // Loading state
@@ -247,35 +283,108 @@ const RecruiterDashboard = () => {
     <>
       <DeleteJobModal />
       <div className="min-h-screen bg-gradient-to-br from-[#dbeafe] via-blue-50 to-white">
-        {/* Header - Responsive */}
+        {/* Header */}
         <header className="bg-white/90 backdrop-blur-lg border-b border-blue-100 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16 gap-4">
-              <div className="flex items-center space-x-3 flex-shrink-0">
-                <button
-                  onClick={() => window.location.href = "/"}
-                  className="p-1 sm:p-3 hover:bg-gray-100 rounded-xl transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
-                </button>
-                <div className="w-10 h-10 bg-gradient-to-br from-[#1c398e] to-[#3b82f6] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
+            <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
+              {/* Logo and User Info */}
+              <div className="flex items-center space-x-3 flex-shrink-0 min-w-0">
+                <div className="w-10 h-10 bg-gradient-to-br from-[#1c398e] to-[#3b82f6] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
                   ILS
                 </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-xl font-bold text-[#1c398e]">Welcome {localStorage.getItem("name")}👋</h1>
+                <div className="hidden md:block min-w-0">
+                  <h1 className="text-xl font-bold text-[#1c398e] truncate">
+                    Welcome {localStorage.getItem("name")}👋
+                  </h1>
                   <p className="text-xs text-blue-600">{localStorage.getItem("userRole")}</p>
                 </div>
               </div>
 
+              {/* Desktop Actions */}
+              <div className="hidden sm:flex items-center space-x-3">
+                <button
+                  onClick={() => window.location.href = '/recruiter/jobs/create'}
+                  className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-105 font-semibold flex items-center space-x-2 text-sm lg:text-base"
+                >
+                  <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                  <span>Post New Job</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    localStorage.clear()
+                    window.location.href = "/"
+
+                  }}
+                  className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-105 font-semibold flex items-center space-x-2 text-sm lg:text-base"
+                >
+                  <LogOut className="w-4 h-4 lg:w-5 lg:h-5" />
+                  <span className="hidden lg:inline">Logout</span>
+                </button>
+              </div>
+
+              {/* Mobile Menu Button */}
               <button
-                onClick={() => window.location.href = '/recruiter/jobs/create'}
-                className="bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:shadow-xl transition-all duration-300 hover:scale-105 font-semibold flex items-center space-x-2 text-sm sm:text-base"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="sm:hidden p-2 text-[#1c398e] hover:bg-blue-50 rounded-lg transition-colors"
               >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Post New Job</span>
-                <span className="sm:hidden">Post</span>
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
             </div>
+
+            {/* Mobile Menu with Animation */}
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  variants={menuVariants}
+                  className="sm:hidden overflow-hidden border-t border-blue-100"
+                >
+                  <motion.div
+                    variants={containerVariants}
+                    className="py-4 space-y-3"
+                  >
+                    {/* Mobile User Info */}
+                    <motion.div
+                      variants={itemVariants}
+                      className="md:hidden px-2 py-2 bg-blue-50 rounded-lg"
+                    >
+                      <p className="text-base font-semibold text-[#1c398e]">
+                        Welcome {localStorage.getItem("name")}👋
+                      </p>
+                      <p className="text-sm text-blue-600">{localStorage.getItem("userRole")}</p>
+                    </motion.div>
+
+                    <motion.button
+                      variants={itemVariants}
+                      onClick={() => {
+                        window.location.href = '/recruiter/jobs/create';
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full bg-gradient-to-r from-[#1c398e] to-[#3b82f6] text-white px-4 py-3 rounded-xl hover:shadow-xl transition-all duration-300 font-semibold flex items-center justify-center space-x-2"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>Post New Job</span>
+                    </motion.button>
+
+                    <motion.button
+                      variants={itemVariants}
+                      onClick={() => {
+                        localStorage.clear()
+                        window.location.href = "/"
+
+                      }}
+                      className="w-full bg-white text-[#1c398e] border-2 border-[#1c398e] px-4 py-3 rounded-xl hover:bg-[#1c398e] hover:text-white transition-all duration-300 font-semibold flex items-center justify-center space-x-2"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span>Logout</span>
+                    </motion.button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </header>
 
