@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { UploadResumeDialog } from './upload-resume-dailog';
 import toast from 'react-hot-toast';
 import WarningBox from './warning-box';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const UserDashboard = () => {
     const [userDetails, setUserDetails] = useState(null);
@@ -110,10 +111,8 @@ export const UserDashboard = () => {
             const data = await response.json();
             console.log("Preferences saved successfully in DB:", data);
 
-            // Store in localStorage
             localStorage.setItem('userPreferences', JSON.stringify(selectedPreferences));
 
-            // Update user details
             setUserDetails(prev => ({
                 ...prev,
                 preference: selectedPreferences
@@ -122,7 +121,6 @@ export const UserDashboard = () => {
             setShowPreferenceDialog(false);
             toast.success("Preferences saved successfully!");
 
-            // Update recommended jobs
             const appliedJobIds = appliedJobs.map(job => job._id || job.id || job.jobId);
             const availableJobs = allJobs.filter(job =>
                 !appliedJobIds.includes(job._id || job.id)
@@ -430,12 +428,10 @@ export const UserDashboard = () => {
                 const userDetailsData = await safeJsonParse(userResponse);
                 setUserDetails(userDetailsData);
 
-                // Handle preferences from DB
                 if (userDetailsData?.preference && Array.isArray(userDetailsData.preference) && userDetailsData.preference.length > 0) {
                     console.log("User preferences from DB:", userDetailsData.preference);
                     localStorage.setItem('userPreferences', JSON.stringify(userDetailsData.preference));
                 } else {
-                    // No preferences in DB, show dialog
                     const localPrefs = localStorage.getItem('userPreferences');
                     if (!localPrefs) {
                         setShowPreferenceDialog(true);
@@ -545,42 +541,102 @@ export const UserDashboard = () => {
         return job?.jobStatus?.toLowerCase() === 'closed';
     };
 
+    // Animation Variants
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: "spring",
+                stiffness: 100,
+                damping: 15
+            }
+        }
+    };
+
+    const cardHoverVariants = {
+        hover: {
+            y: -4,
+            transition: {
+                type: "spring",
+                stiffness: 400,
+                damping: 25
+            }
+        }
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                    <p className="text-blue-600 font-medium">Loading User Dashboard...</p>
-                </div>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 flex items-center justify-center">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center"
+                >
+                    <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="inline-block rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mb-6"
+                    />
+                    <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-blue-700 font-semibold text-lg"
+                    >
+                        Loading Your Dashboard...
+                    </motion.p>
+                </motion.div>
             </div>
         );
     }
 
     if (authError || (userDetails && userDetails.role !== 'User')) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
-                <div className="text-center bg-white p-8 rounded-lg shadow-lg max-w-md mx-4">
-                    <div className="mb-4">
-                        <User className="h-12 w-12 text-red-600 mx-auto" />
-                    </div>
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-                    <p className="text-gray-600 mb-4">
+            <div className="min-h-screen bg-gradient-to-br from-red-50 via-red-100 to-orange-100 flex items-center justify-center p-4">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className="text-center bg-white p-10 rounded-2xl shadow-2xl max-w-md mx-4 border border-red-100"
+                >
+                    <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2, type: "spring" }}
+                        className="mb-6 inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full"
+                    >
+                        <User className="h-10 w-10 text-red-600" />
+                    </motion.div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-3">Access Denied</h2>
+                    <p className="text-gray-600 mb-6 leading-relaxed">
                         {authError || 'You need to be logged in as a user to access this dashboard.'}
                     </p>
-                    <button
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={redirectToLogin}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
                     >
                         Go to Login
-                    </button>
-                </div>
+                    </motion.button>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: '#dbeafe' }}>
-
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100">
             <WarningBox
                 show={showWarning}
                 message="Are you sure you want to remove your resume? This action cannot be undone."
@@ -595,135 +651,212 @@ export const UserDashboard = () => {
                 onUploadSuccess={handleResumeUploadSuccess}
             />
 
-            {showPreferenceDialog && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full relative animate-fade-in overflow-hidden">
-                        <button
-                            onClick={() => setShowPreferenceDialog(false)}
-                            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200 flex items-center justify-center group"
-                            aria-label="Close dialog"
+            <AnimatePresence>
+                {showPreferenceDialog && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            transition={{ type: "spring", damping: 25 }}
+                            className="bg-white rounded-3xl shadow-2xl max-w-lg w-full relative overflow-hidden"
                         >
-                            < X className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-                        </button>
-
-                        <div className="bg-gradient-to-r from-[#1c398e] to-indigo-900 px-8 py-6 relative">
-                            <div className="flex items-center justify-center mb-3">
-                                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                    <Star className="w-8 h-8 text-white" />
-                                </div>
-                            </div>
-                            <h2 className="text-2xl font-bold text-white text-center mb-2">
-                                Set Your Job Preferences
-                            </h2>
-                            <p className="text-blue-100 text-center text-sm">
-                                Help us personalize your job recommendations
-                            </p>
-                        </div>
-
-                        <div className="p-8">
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                                <div className="flex items-start space-x-3">
-                                    <div className="flex-shrink-0 mt-0.5">
-                                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-blue-900">
-                                            Select up to 3 preferences
-                                        </p>
-                                        <p className="text-xs text-blue-700 mt-1">
-                                            {selectedPreferences.length}/3 selected
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 mb-6">
-                                {availablePreferences.map((preference) => {
-                                    const isSelected = selectedPreferences.includes(preference);
-                                    const isDisabled = !isSelected && selectedPreferences.length >= 3;
-
-                                    return (
-                                        <button
-                                            key={preference}
-                                            onClick={() => handlePreferenceToggle(preference)}
-                                            disabled={isDisabled}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left font-medium ${isSelected
-                                                ? 'border-blue-600 bg-blue-50 text-blue-900 shadow-sm'
-                                                : isDisabled
-                                                    ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/30'
-                                                }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-base">{preference}</span>
-                                                {isSelected && (
-                                                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
-                                                        <svg className="w-4 h-4 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path d="M5 13l4 4L19 7"></path>
-                                                        </svg>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            <button
-                                onClick={handleSavePreferences}
-                                disabled={selectedPreferences.length === 0}
-                                className={`w-full py-4 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${selectedPreferences.length === 0
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
-                                    }`}
+                            <motion.button
+                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => setShowPreferenceDialog(false)}
+                                className="absolute top-5 right-5 z-10 w-11 h-11 rounded-full bg-white/30 backdrop-blur-sm hover:bg-white/40 transition-all duration-200 flex items-center justify-center group shadow-lg cursor-pointer"
+                                aria-label="Close dialog"
                             >
-                                {selectedPreferences.length === 0
-                                    ? 'Select at least 1 preference'
-                                    : `Continue with ${selectedPreferences.length} ${selectedPreferences.length === 1 ? 'preference' : 'preferences'}`
-                                }
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                                <X className="w-5 h-5 text-white pointer-events-none" />
+                            </motion.button>
 
-            <header className="relative overflow-hidden shadow-lg" style={{ backgroundColor: '#1c398e' }}>
+                            <div className="bg-gradient-to-r from-[#1c398e] via-indigo-700 to-indigo-900 px-8 py-8 relative overflow-hidden">
+                                <div className="absolute inset-0 opacity-10">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+                                </div>
+                                <motion.div 
+                                    initial={{ scale: 0, rotate: 0 }}
+                                    animate={{ scale: 1, rotate: 360 }}
+                                    transition={{ delay: 0.2, type: "spring", duration: 0.8 }}
+                                    className="flex items-center justify-center mb-4 relative z-10"
+                                >
+                                    <motion.div 
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                        className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl"
+                                    >
+                                        <Star className="w-10 h-10 text-white" />
+                                    </motion.div>
+                                </motion.div>
+                                <motion.h2 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="text-3xl font-bold text-white text-center mb-2 relative z-10"
+                                >
+                                    Set Your Job Preferences
+                                </motion.h2>
+                                <motion.p 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="text-blue-100 text-center relative z-10"
+                                >
+                                    Help us personalize your job recommendations
+                                </motion.p>
+                            </div>
+
+                            <div className="p-8">
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5 mb-6 shadow-sm"
+                                >
+                                    <div className="flex items-start space-x-3">
+                                        <div className="flex-shrink-0 mt-0.5">
+                                            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-blue-900">
+                                                Select up to 3 preferences
+                                            </p>
+                                            <p className="text-xs text-blue-700 mt-1">
+                                                {selectedPreferences.length}/3 selected
+                                            </p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                <div className="space-y-3 mb-6">
+                                    {availablePreferences.map((preference, idx) => {
+                                        const isSelected = selectedPreferences.includes(preference);
+                                        const isDisabled = !isSelected && selectedPreferences.length >= 3;
+
+                                        return (
+                                            <motion.button
+                                                key={preference}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: 0.6 + idx * 0.1 }}
+                                                whileHover={!isDisabled ? { scale: 1.02, x: 4 } : {}}
+                                                whileTap={!isDisabled ? { scale: 0.98 } : {}}
+                                                onClick={() => handlePreferenceToggle(preference)}
+                                                disabled={isDisabled}
+                                                className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left font-medium shadow-sm ${isSelected
+                                                    ? 'border-blue-600 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-900 shadow-md'
+                                                    : isDisabled
+                                                    ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-base">{preference}</span>
+                                                    {isSelected && (
+                                                        <motion.div 
+                                                            initial={{ scale: 0 }}
+                                                            animate={{ scale: 1 }}
+                                                            className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-md"
+                                                        >
+                                                            <svg className="w-4 h-4 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path d="M5 13l4 4L19 7"></path>
+                                                            </svg>
+                                                        </motion.div>
+                                                    )}
+                                                </div>
+                                            </motion.button>
+                                        );
+                                    })}
+                                </div>
+
+                                <motion.button
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 1.1 }}
+                                    whileHover={selectedPreferences.length > 0 ? { scale: 1.02 } : {}}
+                                    whileTap={selectedPreferences.length > 0 ? { scale: 0.98 } : {}}
+                                    onClick={handleSavePreferences}
+                                    disabled={selectedPreferences.length === 0}
+                                    className={`w-full py-4 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl ${selectedPreferences.length === 0
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
+                                    }`}
+                                >
+                                    {selectedPreferences.length === 0
+                                        ? 'Select at least 1 preference'
+                                        : `Continue with ${selectedPreferences.length} ${selectedPreferences.length === 1 ? 'preference' : 'preferences'}`
+                                    }
+                                </motion.button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <motion.header 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative overflow-hidden shadow-xl bg-gradient-to-r from-[#1c398e] via-indigo-700 to-[#1c398e]"
+            >
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
                 </div>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
+                        <motion.div 
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="flex items-center space-x-4"
+                        >
                             <div>
-                                <h1 className="text-2xl font-bold text-white">Welcome back, {userDetails?.name}👋</h1>
-                                <p className="text-blue-200">{userDetails?.role || 'Job Seeker'}</p>
+                                <h1 className="text-3xl font-bold text-white drop-shadow-sm">Welcome back, {userDetails?.name} 👋</h1>
+                                <p className="text-blue-100 mt-1 font-medium">{userDetails?.role || 'Job Seeker'}</p>
                             </div>
-                        </div>
+                        </motion.div>
 
                         <div className="flex items-center space-x-4">
-                            <div className="hidden md:block">
+                            <motion.div 
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="hidden md:block"
+                            >
                                 <div className="flex items-center space-x-3">
                                     <LayoutDashboard className="w-8 h-8 text-white/90" />
-                                    <div className="text-white/90 text-sm">
-                                        <h1 className="text-2xl font-semibold">My Dashboard</h1>
-                                        <p className="text-sm text-blue-100">Overview & application insights</p>
+                                    <div className="text-white/90">
+                                        <h2 className="text-xl font-semibold">My Dashboard</h2>
+                                        <p className="text-xs text-blue-100">Overview & insights</p>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
 
-                            <button
+                            <motion.button
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.4 }}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => {
                                     localStorage.clear();
                                     window.location.href = '/';
                                 }}
-                                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-all duration-200 border border-white/20 hover:border-white/30 group"
+                                className="flex items-center space-x-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-200 border border-white/20 hover:border-white/40 group shadow-lg cursor-pointer"
                                 aria-label="Logout"
                             >
                                 <svg
-                                    className="w-5 h-5 text-white group-hover:scale-110 transition-transform"
+                                    className="w-5 h-5 text-white group-hover:rotate-180 transition-transform duration-300 pointer-events-none"
                                     fill="none"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -733,443 +866,558 @@ export const UserDashboard = () => {
                                 >
                                     <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                                 </svg>
-                                <span className="text-white font-medium hidden sm:inline">Logout</span>
-                            </button>
+                                <span className="text-white font-semibold hidden sm:inline pointer-events-none">Logout</span>
+                            </motion.button>
                         </div>
                     </div>
                 </div>
-            </header>
+            </motion.header>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-                <div className="bg-white rounded-lg shadow-sm p-1 mb-8">
-                    <nav className="flex space-x-1">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-2 mb-8 border border-white/50"
+                >
+                    <nav className="flex space-x-2">
                         {[
                             { id: 'profile', label: 'Profile', icon: User },
                             { id: 'applications', label: 'My Applications', icon: Briefcase },
                             { id: 'recommended', label: 'Recommended Jobs', icon: Star }
                         ].map(({ id, label, icon: Icon }) => (
-                            <button
+                            <motion.button
                                 key={id}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => setActiveTab(id)}
-                                className={`flex items-center space-x-2 px-4 py-3 rounded-md font-medium text-sm transition-all duration-200 flex-1 justify-center ${activeTab === id
-                                    ? 'text-white shadow-md'
+                                className={`flex items-center space-x-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 flex-1 justify-center ${activeTab === id
+                                    ? 'text-white shadow-lg'
                                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                                    }`}
-                                style={activeTab === id ? { backgroundColor: '#1c398e' } : {}}
+                                }`}
+                                style={activeTab === id ? { background: 'linear-gradient(135deg, #1c398e 0%, #3b5bdb 100%)' } : {}}
                             >
                                 <Icon className="h-5 w-5" />
                                 <span className="hidden sm:inline">{label}</span>
-                            </button>
+                            </motion.button>
                         ))}
                     </nav>
-                </div>
+                </motion.div>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-                {activeTab === 'profile' && (
-                    <div className="animate-fade-in">
-                        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                            <div className="px-8 py-6" style={{ backgroundColor: '#1c398e' }}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white">Profile Information</h2>
-                                        <p className="text-blue-100 mt-1">Manage your personal details and preferences</p>
+                <AnimatePresence mode="wait">
+                    {activeTab === 'profile' && (
+                        <motion.div
+                            key="profile"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-white/50">
+                                <div className="px-8 py-8 bg-gradient-to-r from-[#1c398e] via-indigo-700 to-[#1c398e] relative overflow-hidden">
+                                    <div className="absolute inset-0 opacity-10">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
                                     </div>
-                                    <div className="hidden md:flex items-center space-x-3">
-                                        <button
+                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between relative z-10">
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.2 }}
+                                        >
+                                            <h2 className="text-3xl font-bold text-white drop-shadow-sm">Profile Information</h2>
+                                            <p className="text-blue-100 mt-2 font-medium">Manage your personal details and preferences</p>
+                                        </motion.div>
+                                        <motion.div 
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="hidden md:flex items-center space-x-3 mt-4 md:mt-0"
+                                        >
+                                            <motion.button
+                                                whileHover={{ scale: 1.05, y: -2 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => setShowUploadResumeDialog(true)}
+                                                className="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+                                            >
+                                                <Upload className="h-4 w-4" />
+                                                <span>{uploadedResume ? 'Update Resume' : 'Upload Resume'}</span>
+                                            </motion.button>
+                                            <motion.button
+                                                whileHover={{ scale: 1.05, y: -2 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => window.location.href = '/user/edit'}
+                                                className="px-5 py-2.5 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-colors flex items-center space-x-2 shadow-lg hover:shadow-xl"
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                                <span>Edit Profile</span>
+                                            </motion.button>
+                                        </motion.div>
+                                    </div>
+                                    <div className="flex md:hidden flex-col gap-3 mt-6 relative z-10">
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
                                             onClick={() => setShowUploadResumeDialog(true)}
-                                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                                            className="w-full px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg"
                                         >
                                             <Upload className="h-4 w-4" />
                                             <span>{uploadedResume ? 'Update Resume' : 'Upload Resume'}</span>
-                                        </button>
-                                        <button
+                                        </motion.button>
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
                                             onClick={() => window.location.href = '/user/edit'}
-                                            className="px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 shadow-sm hover:shadow-md"
+                                            className="w-full px-5 py-3 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2 shadow-lg"
                                         >
                                             <Edit className="h-4 w-4" />
                                             <span>Edit Profile</span>
-                                        </button>
+                                        </motion.button>
                                     </div>
                                 </div>
-                                <div className="flex md:hidden flex-col gap-2 mt-4">
-                                    <button
-                                        onClick={() => setShowUploadResumeDialog(true)}
-                                        className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-md"
-                                    >
-                                        <Upload className="h-4 w-4" />
-                                        <span>{uploadedResume ? 'Update Resume' : 'Upload Resume'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => window.location.href = '/user/edit'}
-                                        className="w-full px-4 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2 shadow-sm"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                        <span>Edit Profile</span>
-                                    </button>
-                                </div>
-                            </div>
 
-                            <div className="p-8">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                    <div className="lg:col-span-2 space-y-6">
-                                        <div className="flex items-start space-x-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                                            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                                                <User className="h-10 w-10 text-white" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h3 className="text-xl font-semibold text-gray-900">{userDetails?.name}</h3>
-                                                <p className="text-gray-600 mt-1">{userDetails?.role || 'Job Seeker'}</p>
-                                                <div className="flex items-center space-x-2 mt-2 text-gray-500">
-                                                    <span className="text-sm">{userDetails?.email}</span>
+                                <div className="p-8">
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                        <motion.div 
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.4 }}
+                                            className="lg:col-span-2 space-y-6"
+                                        >
+                                            <motion.div 
+                                                whileHover="hover"
+                                                variants={cardHoverVariants}
+                                                className="flex items-start space-x-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 rounded-2xl border-2 border-blue-100 shadow-md"
+                                            >
+                                                <div className="h-24 w-24 rounded-full bg-gradient-to-br from-blue-500 via-indigo-600 to-blue-700 flex items-center justify-center shadow-xl ring-4 ring-blue-100">
+                                                    <User className="h-12 w-12 text-white" />
                                                 </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            <div className="p-5 border-2 border-gray-200 rounded-xl hover:border-blue-300 transition-colors bg-gradient-to-br from-white to-gray-50">
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    Email Address
-                                                </label>
-                                                <p className="text-gray-900 font-medium">{userDetails?.email}</p>
-                                            </div>
-
-                                            <div className="p-5 border-2 border-gray-200 rounded-xl hover:border-blue-300 transition-colors bg-gradient-to-br from-white to-gray-50">
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                    Role
-                                                </label>
-                                                <p className="text-gray-900 font-medium">{userDetails?.role || 'Job Seeker'}</p>
-                                            </div>
-                                        </div>
-
-                                        {uploadedResume && (
-                                            <div className="p-6 border-2 border-blue-200 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-md transition-all">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="p-3 bg-blue-500 rounded-lg">
-                                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                            </svg>
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                                                Uploaded Resume
-                                                            </label>
-                                                            <p className="text-gray-900 font-medium truncate max-w-xs">
-                                                                {uploadedResume.originalName || uploadedResume.fileName || 'Resume.pdf'}
-                                                            </p>
-                                                            {uploadedResume.uploadedAt && (
-                                                                <p className="text-xs text-gray-500 mt-1">
-                                                                    Uploaded on {formatDate(uploadedResume.uploadedAt || new Date().toISOString())}
-                                                                </p>
-                                                            )}
-                                                        </div>
+                                                <div className="flex-1">
+                                                    <h3 className="text-2xl font-bold text-gray-900">{userDetails?.name}</h3>
+                                                    <p className="text-gray-600 mt-1 font-medium">{userDetails?.role || 'Job Seeker'}</p>
+                                                    <div className="flex items-center space-x-2 mt-3 text-gray-500">
+                                                        <span className="text-sm font-medium">{userDetails?.email}</span>
                                                     </div>
-                                                    <button
-                                                        onClick={() => setShowWarning(true)}
-                                                        className="p-2 hover:bg-red-100 rounded-lg transition-colors group"
-                                                        title="Delete resume"
-                                                    >
-                                                        <X className="h-5 w-5 text-red-600 group-hover:text-red-700" />
-                                                    </button>
                                                 </div>
-                                                <div className="flex flex-wrap gap-2 mt-3">
-                                                    {uploadedResume.fileUrl && (
-                                                        <a
-                                                            href={uploadedResume.fileUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                            </svg>
-                                                            <span>View Resume</span>
-                                                        </a>
-                                                    )}
-                                                    {uploadedResume.fileSize && (
-                                                        <span className="px-3 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-lg">
-                                                            {(uploadedResume.fileSize / 1024).toFixed(2)} KB
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                            </motion.div>
 
-                                    <div className="space-y-6">
-                                        <div className="p-6 border-2 border-gray-200 rounded-xl bg-gradient-to-br from-white to-blue-50 hover:shadow-md transition-shadow">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h4 className="text-lg font-semibold text-gray-900">Job Preferences</h4>
-                                                <button
-                                                    onClick={handleEditPreferences}
-                                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <motion.div 
+                                                    whileHover="hover"
+                                                    variants={cardHoverVariants}
+                                                    className="p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-300 transition-colors bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md"
                                                 >
-                                                    Edit
-                                                </button>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
+                                                        Email Address
+                                                    </label>
+                                                    <p className="text-gray-900 font-semibold text-lg">{userDetails?.email}</p>
+                                                </motion.div>
+
+                                                <motion.div 
+                                                    whileHover="hover"
+                                                    variants={cardHoverVariants}
+                                                    className="p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-300 transition-colors bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md"
+                                                >
+                                                    <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
+                                                        Role
+                                                    </label>
+                                                    <p className="text-gray-900 font-semibold text-lg">{userDetails?.role || 'Job Seeker'}</p>
+                                                </motion.div>
                                             </div>
-                                            <div className="space-y-3">
-                                                {getUserPreferences().length > 0 ? (
-                                                    getUserPreferences().map((pref, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 group hover:shadow-sm transition-all"
-                                                        >
-                                                            <span className="font-medium text-blue-900">{pref}</span>
-                                                            <div className="flex items-center space-x-2">
-                                                                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full font-medium">Active</span>
-                                                                <button
-                                                                    onClick={() => handleRemovePreference(pref)}
-                                                                    className="p-1 hover:bg-red-100 rounded-full transition-colors opacity-100"
-                                                                    title="Remove preference"
-                                                                >
-                                                                    <X className="h-4 w-4 text-red-600" />
-                                                                </button>
+
+                                            {uploadedResume && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    whileHover="hover"
+                                                    variants={cardHoverVariants}
+                                                    className="p-6 border-2 border-blue-200 rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 shadow-md hover:shadow-lg transition-all"
+                                                >
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <div className="flex items-center space-x-4">
+                                                            <motion.div 
+                                                                whileHover={{ rotate: 360 }}
+                                                                transition={{ duration: 0.5 }}
+                                                                className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg"
+                                                            >
+                                                                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                </svg>
+                                                            </motion.div>
+                                                            <div>
+                                                                <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wide">
+                                                                    Uploaded Resume
+                                                                </label>
+                                                                <p className="text-gray-900 font-semibold truncate max-w-xs">
+                                                                    {uploadedResume.originalName || uploadedResume.fileName || 'Resume.pdf'}
+                                                                </p>
+                                                                {uploadedResume.uploadedAt && (
+                                                                    <p className="text-xs text-gray-500 mt-1 font-medium">
+                                                                        Uploaded on {formatDate(uploadedResume.uploadedAt || new Date().toISOString())}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-gray-500 text-sm">No preferences set</p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className={`p-6 border-2 rounded-xl hover:shadow-md transition-shadow ${uploadedResume ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' : 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200'}`}>
-                                            <h4 className={`text-sm font-semibold mb-2 ${uploadedResume ? 'text-green-800' : 'text-yellow-800'}`}>Profile Status</h4>
-                                            <div className="flex items-center space-x-2">
-                                                <div className={`h-2 w-2 rounded-full animate-pulse ${uploadedResume ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                                                <span className={`text-sm font-medium ${uploadedResume ? 'text-green-700' : 'text-yellow-700'}`}>
-                                                    {uploadedResume ? 'Profile Complete' : 'Profile Incomplete'}
-                                                </span>
-                                            </div>
-                                            {!uploadedResume && (
-                                                <p className="text-xs text-yellow-600 mt-2">
-                                                    Upload your resume to complete your profile
-                                                </p>
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.1, rotate: 90 }}
+                                                            whileTap={{ scale: 0.9 }}
+                                                            onClick={() => setShowWarning(true)}
+                                                            className="p-2.5 hover:bg-red-100 rounded-xl transition-colors group"
+                                                            title="Delete resume"
+                                                        >
+                                                            <X className="h-5 w-5 text-red-600 group-hover:text-red-700" />
+                                                        </motion.button>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-3 mt-4">
+                                                        {uploadedResume.fileUrl && (
+                                                            <motion.a
+                                                                whileHover={{ scale: 1.05 }}
+                                                                whileTap={{ scale: 0.95 }}
+                                                                href={uploadedResume.fileUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center space-x-2 shadow-md hover:shadow-lg"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                </svg>
+                                                                <span>View Resume</span>
+                                                            </motion.a>
+                                                        )}
+                                                        {uploadedResume.fileSize && (
+                                                            <span className="px-4 py-2.5 bg-blue-100 text-blue-800 text-sm font-semibold rounded-xl">
+                                                                {(uploadedResume.fileSize / 1024).toFixed(2)} KB
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
                                             )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                                        </motion.div>
 
-                {activeTab === 'applications' && (
-                    <div className="animate-fade-in">
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900">My Applications</h2>
-                                <p className="text-gray-600 mt-1">Track the status of your job applications</p>
-                            </div>
-                            <div className="text-sm text-gray-500">
-                                Total Applications: <span className="font-semibold text-gray-900">{appliedJobs.length}</span>
-                            </div>
-                        </div>
-
-                        {appliedJobs.length > 0 ? (
-                            <div className="grid gap-6">
-                                {appliedJobs.map((job, index) => (
-                                    <div
-                                        key={job._id || job.applicationDetails?.applicationId || index}
-                                        className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 w-full overflow-hidden"
-                                        style={{ animationDelay: `${index * 100}ms` }}
-                                    >
-                                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <h3 className="text-xl font-bold text-gray-900 break-words">
-                                                        {job.jobTitle || 'Job Title'}
-                                                    </h3>
+                                        <motion.div 
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.5 }}
+                                            className="space-y-6"
+                                        >
+                                            <motion.div 
+                                                whileHover="hover"
+                                                variants={cardHoverVariants}
+                                                className="p-6 border-2 border-gray-200 rounded-2xl bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 shadow-md hover:shadow-lg transition-shadow"
+                                            >
+                                                <div className="flex items-center justify-between mb-5">
+                                                    <h4 className="text-lg font-bold text-gray-900">Job Preferences</h4>
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={handleEditPreferences}
+                                                        className="text-xs text-blue-600 hover:text-blue-700 font-semibold px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                                    >
+                                                        Edit
+                                                    </motion.button>
                                                 </div>
-
-                                                <p className="text-gray-600 mb-4 line-clamp-2 break-words overflow-hidden">
-                                                    {job.jobDescription || 'No description available'}
-                                                </p>
-
-                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                                                    <div className="flex items-center space-x-2 text-gray-600 min-w-0">
-                                                        <Building className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm truncate">
-                                                            {job.postedBy?.name || 'Company Name'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2 text-gray-600 min-w-0">
-                                                        <MapPin className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm truncate">{job.location || 'Location not specified'}</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2 text-gray-600 min-w-0">
-                                                        <Clock className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm truncate">
-                                                            Applied {formatDate(job.applicationDetails?.appliedAt || job.datePosted)}
-                                                        </span>
-                                                    </div>
+                                                <div className="space-y-3">
+                                                    {getUserPreferences().length > 0 ? (
+                                                        getUserPreferences().map((pref, index) => (
+                                                            <motion.div
+                                                                key={index}
+                                                                initial={{ opacity: 0, x: -10 }}
+                                                                animate={{ opacity: 1, x: 0 }}
+                                                                transition={{ delay: 0.6 + index * 0.1 }}
+                                                                whileHover={{ x: 4 }}
+                                                                className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 group hover:shadow-sm transition-all"
+                                                            >
+                                                                <span className="font-semibold text-blue-900">{pref}</span>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <span className="text-xs bg-blue-200 text-blue-800 px-2.5 py-1 rounded-full font-bold">Active</span>
+                                                                    <motion.button
+                                                                        whileHover={{ scale: 1.2, rotate: 90 }}
+                                                                        whileTap={{ scale: 0.8 }}
+                                                                        onClick={() => handleRemovePreference(pref)}
+                                                                        className="p-1 hover:bg-red-100 rounded-full transition-colors"
+                                                                        title="Remove preference"
+                                                                    >
+                                                                        <X className="h-4 w-4 text-red-600" />
+                                                                    </motion.button>
+                                                                </div>
+                                                            </motion.div>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-gray-500 text-sm font-medium">No preferences set</p>
+                                                    )}
                                                 </div>
+                                            </motion.div>
 
-                                                {job.jobType && (
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                                            {job.jobType}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-                                <Briefcase className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold text-gray-600 mb-2">No Applications Yet</h3>
-                                <p className="text-gray-500 mb-6">Start exploring opportunities and apply to jobs that match your interests!</p>
-                                <button
-                                    onClick={() => setActiveTab('recommended')}
-                                    className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90 transition-colors"
-                                    style={{ backgroundColor: '#1c398e' }}
-                                >
-                                    Browse Recommended Jobs
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'recommended' && (
-                    <div className="animate-fade-in">
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Recommended Jobs</h2>
-                                <p className="text-gray-600 mt-1">Jobs curated based on your preferences and profile</p>
-                            </div>
-                            <div className="text-sm text-gray-500">
-                                Found: <span className="font-semibold text-gray-900">{recommendedJobs.length}</span> matches
-                            </div>
-                        </div>
-
-                        {recommendedJobs.length > 0 ? (
-                            <div className="grid gap-6">
-                                {recommendedJobs.map((job, index) => (
-                                    <div
-                                        key={job._id || index}
-                                        className={`bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 ${isJobClosed(job) ? 'opacity-50 grayscale' : ''}`}
-                                        style={{ animationDelay: `${index * 100}ms` }}
-                                    >
-                                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <h3 className="text-xl font-bold text-gray-900">
-                                                        {job.title || 'Job Title'}
-                                                    </h3>
-                                                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium ml-4">
-                                                        Recommended
+                                            <motion.div 
+                                                whileHover="hover"
+                                                variants={cardHoverVariants}
+                                                className={`p-6 border-2 rounded-2xl shadow-md hover:shadow-lg transition-all ${uploadedResume ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' : 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200'}`}
+                                            >
+                                                <h4 className={`text-sm font-bold mb-3 uppercase tracking-wide ${uploadedResume ? 'text-green-800' : 'text-yellow-800'}`}>Profile Status</h4>
+                                                <div className="flex items-center space-x-3">
+                                                    <motion.div 
+                                                        animate={{ scale: [1, 1.2, 1] }}
+                                                        transition={{ duration: 2, repeat: Infinity }}
+                                                        className={`h-3 w-3 rounded-full ${uploadedResume ? 'bg-green-500' : 'bg-yellow-500'}`}
+                                                    />
+                                                    <span className={`text-sm font-bold ${uploadedResume ? 'text-green-700' : 'text-yellow-700'}`}>
+                                                        {uploadedResume ? 'Profile Complete' : 'Profile Incomplete'}
                                                     </span>
                                                 </div>
-
-                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                                                    <div className="flex items-center space-x-2 text-gray-600">
-                                                        <Building className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm">
-                                                            {job.postedBy?.name || 'Company Name'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2 text-gray-600">
-                                                        <MapPin className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm">{job.location || 'Location not specified'}</span>
-                                                    </div>
-                                                    <div className="flex items-center space-x-2 text-gray-600">
-                                                        <Clock className="h-4 w-4 flex-shrink-0" />
-                                                        <span className="text-sm">Posted {formatDate(job.datePosted)}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex flex-wrap gap-2">
-                                                    {job.jobType && (
-                                                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                                            {job.jobType}
-                                                        </span>
-                                                    )}
-                                                    {job.jobStatus && (
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${job.jobStatus === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                            {job.jobStatus}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-4 lg:mt-0 lg:ml-6 flex-shrink-0">
-                                                {isJobClosed(job) ? (
-                                                    <div className="w-full lg:w-auto px-6 py-3 text-red-600 font-medium rounded-lg border-2 border-red-200 bg-red-50 text-center">
-                                                        Closed
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        className="w-full lg:w-auto px-6 py-3 text-white font-medium rounded-lg hover:opacity-90 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
-                                                        style={{ backgroundColor: '#1c398e' }}
-                                                        onClick={() => window.location.href = `/jobs-landing/${job._id}`}
-                                                    >
-                                                        See Details
-                                                    </button>
+                                                {!uploadedResume && (
+                                                    <p className="text-xs text-yellow-600 mt-3 font-medium">
+                                                        Upload your resume to complete your profile
+                                                    </p>
                                                 )}
-                                            </div>
-                                        </div>
+                                            </motion.div>
+                                        </motion.div>
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-                                <Star className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold text-gray-600 mb-2">No Recommendations Available</h3>
-                                <div className="text-gray-500 space-y-2">
-                                    <p>No jobs match your current preferences.</p>
-                                    <p className="text-sm">
-                                        Current preferences: <span className="font-semibold">{getUserPreferences().join(', ')}</span>
-                                    </p>
-                                    <p className="text-sm">Try updating your preferences or check back later for new opportunities.</p>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                )}
-            </div>
+                        </motion.div>
+                    )}
 
-            <style jsx>{`
-                .animate-fade-in {
-                    animation: fadeIn 0.6s ease-in;
-                }
-                
-                .line-clamp-2 {
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                }
-                
-                .line-clamp-3 {
-                    display: -webkit-box;
-                    -webkit-line-clamp: 3;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                }
-                
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-                
-                @media (max-width: 640px) {
-                    .grid {
-                        grid-template-columns: 1fr;
-                    }
-                }
-            `}</style>
+                    {activeTab === 'applications' && (
+                        <motion.div
+                            key="applications"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex items-center justify-between mb-8"
+                            >
+                                <div>
+                                    <h2 className="text-3xl font-bold text-gray-900">My Applications</h2>
+                                    <p className="text-gray-600 mt-2 font-medium">Track the status of your job applications</p>
+                                </div>
+                                <div className="text-sm text-gray-500 bg-white px-5 py-3 rounded-xl shadow-md border border-gray-200">
+                                    Total Applications: <span className="font-bold text-gray-900 text-lg">{appliedJobs.length}</span>
+                                </div>
+                            </motion.div>
+
+                            {appliedJobs.length > 0 ? (
+                                <motion.div 
+                                    variants={containerVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    className="grid gap-6"
+                                >
+                                    {appliedJobs.map((job, index) => (
+                                        <motion.div
+                                            key={job._id || job.applicationDetails?.applicationId || index}
+                                            variants={itemVariants}
+                                            whileHover="hover"
+                                            custom={index}
+                                            className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border-2 border-gray-100 hover:border-blue-200 w-full overflow-hidden"
+                                        >
+                                            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <h3 className="text-2xl font-bold text-gray-900 break-words">
+                                                            {job.jobTitle || 'Job Title'}
+                                                        </h3>
+                                                    </div>
+
+                                                    <p className="text-gray-600 mb-5 line-clamp-2 break-words overflow-hidden leading-relaxed">
+                                                        {job.jobDescription || 'No description available'}
+                                                    </p>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                                                        <div className="flex items-center space-x-3 text-gray-600 min-w-0 bg-gray-50 p-3 rounded-lg">
+                                                            <Building className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                                                            <span className="text-sm font-medium truncate">
+                                                                {job.postedBy?.name || 'Company Name'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-3 text-gray-600 min-w-0 bg-gray-50 p-3 rounded-lg">
+                                                            <MapPin className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                                                            <span className="text-sm font-medium truncate">{job.location || 'Location not specified'}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-3 text-gray-600 min-w-0 bg-gray-50 p-3 rounded-lg">
+                                                            <Clock className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                                                            <span className="text-sm font-medium truncate">
+                                                                Applied {formatDate(job.applicationDetails?.appliedAt || job.datePosted)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {job.jobType && (
+                                                        <div className="flex items-center space-x-2">
+                                                            <span className="px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 rounded-xl text-xs font-bold shadow-sm">
+                                                                {job.jobType}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            ) : (
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-16 text-center border-2 border-gray-100"
+                                >
+                                    <motion.div
+                                        animate={{ y: [0, -10, 0] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    >
+                                        <Briefcase className="h-20 w-20 text-gray-300 mx-auto mb-6" />
+                                    </motion.div>
+                                    <h3 className="text-2xl font-bold text-gray-600 mb-3">No Applications Yet</h3>
+                                    <p className="text-gray-500 mb-8 text-lg">Start exploring opportunities and apply to jobs that match your interests!</p>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05, y: -2 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => setActiveTab('recommended')}
+                                        className="px-8 py-4 text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
+                                        style={{ background: 'linear-gradient(135deg, #1c398e 0%, #3b5bdb 100%)' }}
+                                    >
+                                        Browse Recommended Jobs
+                                    </motion.button>
+                                </motion.div>
+                            )}
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'recommended' && (
+                        <motion.div
+                            key="recommended"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex items-center justify-between mb-8"
+                            >
+                                <div>
+                                    <h2 className="text-3xl font-bold text-gray-900">Recommended Jobs</h2>
+                                    <p className="text-gray-600 mt-2 font-medium">Jobs curated based on your preferences and profile</p>
+                                </div>
+                                <div className="text-sm text-gray-500 bg-white px-5 py-3 rounded-xl shadow-md border border-gray-200">
+                                    Found: <span className="font-bold text-gray-900 text-lg">{recommendedJobs.length}</span> matches
+                                </div>
+                            </motion.div>
+
+                            {recommendedJobs.length > 0 ? (
+                                <motion.div 
+                                    variants={containerVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    className="grid gap-6"
+                                >
+                                    {recommendedJobs.map((job, index) => (
+                                        <motion.div
+                                            key={job._id || index}
+                                            variants={itemVariants}
+                                            whileHover="hover"
+                                            custom={index}
+                                            className={`bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border-2 border-gray-100 hover:border-green-200 ${isJobClosed(job) ? 'opacity-50 grayscale' : ''}`}
+                                        >
+                                            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-start justify-between mb-4">
+                                                        <h3 className="text-2xl font-bold text-gray-900">
+                                                            {job.title || 'Job Title'}
+                                                        </h3>
+                                                        <motion.span 
+                                                            initial={{ scale: 0 }}
+                                                            animate={{ scale: 1 }}
+                                                            transition={{ delay: 0.3, type: "spring" }}
+                                                            className="px-4 py-2 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-xl text-xs font-bold ml-4 shadow-sm"
+                                                        >
+                                                            Recommended
+                                                        </motion.span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                                                        <div className="flex items-center space-x-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                                            <Building className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                                                            <span className="text-sm font-medium">
+                                                                {job.postedBy?.name || 'Company Name'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                                            <MapPin className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                                                            <span className="text-sm font-medium">{job.location || 'Location not specified'}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                                            <Clock className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                                                            <span className="text-sm font-medium">Posted {formatDate(job.datePosted)}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {job.jobType && (
+                                                            <span className="px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 rounded-xl text-xs font-bold shadow-sm">
+                                                                {job.jobType}
+                                                            </span>
+                                                        )}
+                                                        {job.jobStatus && (
+                                                            <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm ${job.jobStatus === 'active' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800' : 'bg-gradient-to-r from-red-100 to-orange-100 text-red-800'}`}>
+                                                                {job.jobStatus}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-6 lg:mt-0 lg:ml-6 flex-shrink-0">
+                                                    {isJobClosed(job) ? (
+                                                        <div className="w-full lg:w-auto px-8 py-3 text-red-600 font-bold rounded-xl border-2 border-red-200 bg-red-50 text-center">
+                                                            Closed
+                                                        </div>
+                                                    ) : (
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.05, y: -2 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                            className="w-full lg:w-auto px-8 py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                                            style={{ background: 'linear-gradient(135deg, #1c398e 0%, #3b5bdb 100%)' }}
+                                                            onClick={() => window.location.href = `/jobs-landing/${job._id}`}
+                                                        >
+                                                            See Details
+                                                        </motion.button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+                            ) : (
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-16 text-center border-2 border-gray-100"
+                                >
+                                    <motion.div
+                                        animate={{ rotate: [0, 10, -10, 0] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    >
+                                        <Star className="h-20 w-20 text-gray-300 mx-auto mb-6" />
+                                    </motion.div>
+                                    <h3 className="text-2xl font-bold text-gray-600 mb-3">No Recommendations Available</h3>
+                                    <div className="text-gray-500 space-y-3 text-lg">
+                                        <p>No jobs match your current preferences.</p>
+                                        <p className="text-sm">
+                                            Current preferences: <span className="font-bold">{getUserPreferences().join(', ')}</span>
+                                        </p>
+                                        <p className="text-sm">Try updating your preferences or check back later for new opportunities.</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 };

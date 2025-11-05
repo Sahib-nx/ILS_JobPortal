@@ -6,6 +6,7 @@ import {
   Briefcase, Calendar, Loader2, Share2, Building2, Star, CheckCircle, X, ChevronDown, Search
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const JobDetailPage = ({ jobId }) => {
   const [job, setJob] = useState(null);
@@ -21,7 +22,6 @@ const JobDetailPage = ({ jobId }) => {
     phone: '',
   });
 
-  // Phone input states
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -30,7 +30,6 @@ const JobDetailPage = ({ jobId }) => {
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // Helper function to safely render user/poster information
   const renderPostedBy = (postedByData) => {
     if (!postedByData) return 'HR Team';
     if (typeof postedByData === 'string') return postedByData;
@@ -40,12 +39,10 @@ const JobDetailPage = ({ jobId }) => {
     return 'HR Team';
   };
 
-  // Navigate to login if not authenticated
   const handleLoginRedirect = () => {
     window.location.href = '/auth/login';
   };
 
-  // Format file size for display
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -54,32 +51,30 @@ const JobDetailPage = ({ jobId }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Fetch countries from REST Countries API
   useEffect(() => {
     const fetchCountries = async () => {
       setIsLoadingCountries(true);
       try {
         const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags');
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch countries');
         }
-        
+
         const data = await response.json();
-        
-        // Check if data is an array
+
         if (!Array.isArray(data)) {
           console.error('Expected array but got:', typeof data);
           throw new Error('Invalid data format');
         }
-        
+
         const formattedCountries = data
           .map(country => {
             try {
               return {
                 name: country.name?.common || 'Unknown',
                 code: country.cca2 || '',
-                dialCode: country.idd?.root 
+                dialCode: country.idd?.root
                   ? `${country.idd.root}${country.idd.suffixes?.[0] || ''}`
                   : '',
                 flag: country.flags?.svg || country.flags?.png || 'https://flagcdn.com/xx.svg',
@@ -97,8 +92,7 @@ const JobDetailPage = ({ jobId }) => {
         }
 
         setCountries(formattedCountries);
-        
-        // Set India as default
+
         const india = formattedCountries.find(c => c.code === 'IN');
         if (india) {
           setSelectedCountry(india);
@@ -107,7 +101,6 @@ const JobDetailPage = ({ jobId }) => {
         }
       } catch (error) {
         console.error('Error fetching countries:', error);
-        // Fallback to comprehensive basic data
         const fallback = [
           { name: 'India', code: 'IN', dialCode: '+91', flag: 'https://flagcdn.com/in.svg' },
           { name: 'United States', code: 'US', dialCode: '+1', flag: 'https://flagcdn.com/us.svg' },
@@ -140,7 +133,6 @@ const JobDetailPage = ({ jobId }) => {
     fetchCountries();
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -153,65 +145,54 @@ const JobDetailPage = ({ jobId }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Focus search input when dropdown opens
   useEffect(() => {
     if (showCountryDropdown && searchInputRef.current) {
       setTimeout(() => searchInputRef.current?.focus(), 100);
     }
   }, [showCountryDropdown]);
 
-  // Filter countries based on search
-  const filteredCountries = countries.filter(country => 
+  const filteredCountries = countries.filter(country =>
     country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
     country.dialCode.includes(countrySearch) ||
     country.code.toLowerCase().includes(countrySearch.toLowerCase())
   );
 
-  // Handle country selection
   const handleCountrySelect = (country) => {
     setSelectedCountry(country);
     setShowCountryDropdown(false);
     setCountrySearch('');
-    
-    // Update phone with dial code if phone is empty
+
     if (!applicationData.phone || applicationData.phone.trim() === '') {
       setApplicationData(prev => ({ ...prev, phone: '' }));
     }
   };
 
-  // Handle phone input change
   const handlePhoneChange = (e) => {
     let value = e.target.value;
-    
-    // If pasted with country code, try to detect country
+
     if (value.startsWith('+') && value.length > 2) {
-      // Extract potential dial code
       const potentialCode = value.substring(0, 4);
-      const matchingCountry = countries.find(c => 
+      const matchingCountry = countries.find(c =>
         potentialCode.startsWith(c.dialCode)
       );
-      
+
       if (matchingCountry && matchingCountry.code !== selectedCountry?.code) {
         setSelectedCountry(matchingCountry);
-        // Remove dial code from input since it's shown separately
         value = value.substring(matchingCountry.dialCode.length).trim();
       }
     }
-    
-    // Allow only numbers, spaces, and + sign
+
     if (/^[0-9\s+]*$/.test(value)) {
       setApplicationData(prev => ({ ...prev, phone: value }));
     }
   };
 
-  // Get full phone number with country code
   const getFullPhoneNumber = () => {
     if (!selectedCountry || !applicationData.phone) return '';
     const cleanPhone = applicationData.phone.replace(/\D/g, '');
     return `${selectedCountry.dialCode}${cleanPhone}`;
   };
 
-  // Get current user from localStorage
   useEffect(() => {
     const getUserFromLocalStorage = () => {
       setIsUserLoading(true);
@@ -246,7 +227,6 @@ const JobDetailPage = ({ jobId }) => {
     getUserFromLocalStorage();
   }, []);
 
-  // Fetch job details
   useEffect(() => {
     const fetchJobDetails = async () => {
       setIsLoading(true);
@@ -336,9 +316,7 @@ const JobDetailPage = ({ jobId }) => {
         window.location.href = "/user?tab=applications"
       } else {
         const errorMessage = result.error || result.message || 'Application failed. Please try again.';
-        // alert(errorMessage);
         toast.error(errorMessage);
-        // console.error('Application error:', result);
       }
 
     } catch (error) {
@@ -365,7 +343,6 @@ const JobDetailPage = ({ jobId }) => {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      // alert('Invalid file type. Only PDF, DOC, DOCX allowed.');
       toast.error('Invalid file type. Only PDF, DOC, DOCX allowed.')
       e.target.value = '';
       return;
@@ -428,168 +405,206 @@ const JobDetailPage = ({ jobId }) => {
 
   if (!job) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="text-center max-w-md mx-auto">
-          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-md mx-auto"
+        >
+          <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl">
             <AlertCircle className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Job Not Found</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">Job Not Found</h2>
           <p className="text-gray-600 mb-8 leading-relaxed">The job you're looking for doesn't exist or has been removed.</p>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => window.history.back()}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl hover:shadow-xl transition-all duration-300 font-semibold"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl hover:shadow-2xl transition-all duration-300 font-semibold"
           >
             Go Back
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <motion.header
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 shadow-sm"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => window.history.back()}
-                className="p-1 sm:p-3 hover:bg-gray-100 rounded-xl transition-colors"
+                className="p-2 sm:p-3 hover:bg-gray-100 rounded-xl transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                  ILS
-                </div>
-                <span className="text-lg sm:text-xl font-bold text-gray-900 hidden sm:block">ILS</span>
+              </motion.button>
+              <div className="w-12 h-12 bg-gradient-to-br from-[#1c398e] via-[#2d4ba6] to-[#3b82f6] rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10">ILS</span>
               </div>
+              <div className="hidden sm:block">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1c398e] to-[#3b82f6] bg-clip-text text-transparent">ILS</h1>
+                <p className="text-xs text-blue-600/80 font-medium">Find Your Dream Job</p>
+              </div>
+
             </div>
 
-            <button
+
+
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={handleShareJob}
-              className="p-2 sm:p-3 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-xl transition-all"
+              className="p-2 sm:p-3 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-blue-50 hover:to-indigo-50 text-gray-600 hover:text-blue-600 rounded-xl transition-all shadow-sm"
             >
               <Share2 className="w-5 h-5" />
-            </button>
+            </motion.button>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
-          <div className="lg:col-span-2 space-y-6 lg:space-y-8">
-            <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-gray-100">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="lg:col-span-2 space-y-6 lg:space-y-8"
+          >
+            <motion.div
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-gray-100/50 backdrop-blur-sm"
+            >
               <div className="mb-6">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight break-words">
+                <motion.h1
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent mb-4 leading-tight break-words"
+                >
                   {job.title}
-                </h1>
-                <div className="flex items-center text-gray-600 mb-4">
+                </motion.h1>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex items-center text-gray-600 mb-4"
+                >
                   <Building2 className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0" />
                   <span className="font-medium break-words">{renderPostedBy(job.postedBy)}</span>
-                </div>
+                </motion.div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-500">Location</p>
-                      <p className="font-semibold text-gray-900 break-words">{job.location || 'Remote'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-500">Job Type</p>
-                      <p className="font-semibold text-gray-900 break-words">{job.type || 'Full-time'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-100">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-500">Posted</p>
-                      <p className="font-semibold text-gray-900 break-words">
-                        {job.datePosted ? new Date(job.datePosted).toLocaleDateString() : 'Recently'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {job.experience && (
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6"
+              >
+                {[
+                  { icon: MapPin, label: 'Location', value: job.location || 'Remote', gradient: 'from-blue-500 to-blue-600', bg: 'from-blue-50 to-indigo-50', border: 'border-blue-100' },
+                  { icon: Clock, label: 'Job Type', value: job.type || 'Full-time', gradient: 'from-green-500 to-green-600', bg: 'from-green-50 to-emerald-50', border: 'border-green-100' },
+                  { icon: Calendar, label: 'Posted', value: job.datePosted ? new Date(job.datePosted).toLocaleDateString() : 'Recently', gradient: 'from-purple-500 to-purple-600', bg: 'from-purple-50 to-violet-50', border: 'border-purple-100' },
+                  ...(job.experience ? [{ icon: Star, label: 'Experience', value: job.experience, gradient: 'from-amber-500 to-amber-600', bg: 'from-amber-50 to-orange-50', border: 'border-amber-100' }] : [])
+                ].map((item, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+                    whileHover={{ scale: 1.05, y: -4 }}
+                    className={`bg-gradient-to-br ${item.bg} rounded-2xl p-4 border ${item.border} shadow-sm hover:shadow-md transition-all duration-300`}
+                  >
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Star className="w-5 h-5 text-white" />
+                      <div className={`w-10 h-10 bg-gradient-to-br ${item.gradient} rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg`}>
+                        <item.icon className="w-5 h-5 text-white" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-500">Experience</p>
-                        <p className="font-semibold text-gray-900 break-words">{job.experience}</p>
+                        <p className="text-sm font-medium text-gray-500">{item.label}</p>
+                        <p className="font-semibold text-gray-900 break-words">{item.value}</p>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
 
-            <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-gray-100">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+              whileHover={{ y: -4 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-gray-100/50 backdrop-blur-sm"
+            >
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <Briefcase className="w-6 h-6 mr-3 text-blue-500 flex-shrink-0" />
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3 shadow-lg">
+                  <Briefcase className="w-5 h-5 text-white" />
+                </div>
                 Job Description
               </h2>
-              <div
-                className="text-gray-700 leading-relaxed space-y-4 break-words overflow-wrap-anywhere"
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                className="text-gray-700 leading-relaxed space-y-4 break-words overflow-wrap-anywhere prose prose-blue max-w-none"
                 style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                 dangerouslySetInnerHTML={{
                   __html: (job.description || job.jobDescription || 'No description available.')
                     .replace(/\n/g, '<br>')
                 }}
               />
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="lg:col-span-1"
+          >
+            <motion.div
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100/50 backdrop-blur-sm lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto"
+            >
               <h3 className="text-xl font-bold text-gray-900 mb-6">Quick Overview</h3>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <span className="text-gray-600 font-medium">Job Type</span>
-                  <span className="font-semibold text-gray-900 break-words text-right">{job.type || 'Full-time'}</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <span className="text-gray-600 font-medium flex-shrink-0 mr-2">Location</span>
-                  <span className="font-semibold text-gray-900 text-right break-words">{job.location || 'Remote'}</span>
-                </div>
-
-                {job.experience && (
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <span className="text-gray-600 font-medium">Experience</span>
-                    <span className="font-semibold text-gray-900 break-words text-right">{job.experience}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <span className="text-gray-600 font-medium flex-shrink-0 mr-2">Posted By</span>
-                  <span className="font-semibold text-gray-900 text-right break-words">{renderPostedBy(job.postedBy)}</span>
-                </div>
+              <div className="space-y-3 mb-8">
+                {[
+                  { label: 'Job Type', value: job.type || 'Full-time' },
+                  { label: 'Location', value: job.location || 'Remote' },
+                  ...(job.experience ? [{ label: 'Experience', value: job.experience }] : []),
+                  { label: 'Posted By', value: renderPostedBy(job.postedBy) }
+                ].map((item, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
+                    whileHover={{ x: 4 }}
+                    className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl hover:shadow-md transition-all duration-300"
+                  >
+                    <span className="text-gray-600 font-medium flex-shrink-0 mr-2">{item.label}</span>
+                    <span className="font-semibold text-gray-900 text-right break-words">{item.value}</span>
+                  </motion.div>
+                ))}
               </div>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   if (!user) {
                     handleLoginRedirect();
@@ -597,244 +612,45 @@ const JobDetailPage = ({ jobId }) => {
                   }
                   setShowApplicationForm(true);
                 }}
-                className="w-full px-6 py-4 rounded-xl font-semibold text-lg flex items-center justify-center space-x-3 transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:scale-[1.02]"
+                className="w-full px-6 py-4 rounded-2xl font-semibold text-lg flex items-center justify-center space-x-3 transition-all duration-300 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white hover:shadow-2xl hover:shadow-blue-500/50"
               >
                 <Send className="w-5 h-5" />
                 <span>Apply Now</span>
-              </button>
+              </motion.button>
 
               <p className="text-center text-sm text-gray-500 mt-4">
                 Join our team and start your career journey!
               </p>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </main>
 
-      {showApplicationForm && user && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between mb-8">
-              <div className="min-w-0 flex-1 pr-4">
-                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">Apply for Position</h3>
-                <p className="text-gray-600 mt-1 break-words">{job.title}</p>
-                <p className="text-sm text-blue-600 mt-2 break-words">Applying as: {user.name || user.email}</p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowApplicationForm(false);
-                  setFileError('');
-                  setApplicationData({
-                    resume: null,
-                    email: '',
-                    phone: '',
-                  });
-                }}
-                className="p-2 hover:bg-gray-100 rounded-xl transition-colors flex-shrink-0"
-              >
-                <X className="w-6 h-6 text-gray-500" />
-              </button>
-            </div>
-
-            <form onSubmit={handleJobApplication} className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-3">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={applicationData.email || user.email || ''}
-                    onChange={(e) => setApplicationData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                    placeholder="your.email@example.com"
-                  />
+      <AnimatePresence>
+        {showApplicationForm && user && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="min-w-0 flex-1 pr-4">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">Apply for Position</h3>
+                  <p className="text-gray-600 mt-1 break-words">{job.title}</p>
+                  <p className="text-sm text-blue-600 mt-2 break-words">Applying as: {user.name || user.email}</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-3">
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <div className="flex">
-                      <div ref={dropdownRef} className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                          disabled={isLoadingCountries}
-                          className="flex items-center space-x-2 px-3 py-3 border border-r-0 border-gray-200 rounded-l-xl bg-gray-50 hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                        >
-                          {isLoadingCountries ? (
-                            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                          ) : selectedCountry ? (
-                            <>
-                              <img 
-                                src={selectedCountry.flag} 
-                                alt={selectedCountry.name}
-                                className="w-6 h-4 object-cover rounded"
-                              />
-                              <span className="text-sm font-medium text-gray-700">
-                                {selectedCountry.dialCode}
-                              </span>
-                              <ChevronDown className="w-4 h-4 text-gray-500" />
-                            </>
-                          ) : (
-                            <span className="text-sm text-gray-500">Select</span>
-                          )}
-                        </button>
-
-                        {showCountryDropdown && !isLoadingCountries && (
-                          <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden flex flex-col">
-                            <div className="p-3 border-b border-gray-100 sticky top-0 bg-white">
-                              <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                  ref={searchInputRef}
-                                  type="text"
-                                  value={countrySearch}
-                                  onChange={(e) => setCountrySearch(e.target.value)}
-                                  placeholder="Search country..."
-                                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                                />
-                              </div>
-                            </div>
-                            <div className="overflow-y-auto">
-                              {filteredCountries.length === 0 ? (
-                                <div className="p-4 text-center text-gray-500">
-                                  No countries found
-                                </div>
-                              ) : (
-                                filteredCountries.map((country) => (
-                                  <button
-                                    key={country.code}
-                                    type="button"
-                                    onClick={() => handleCountrySelect(country)}
-                                    className={`w-full flex items-center space-x-3 px-4 py-3 hover:bg-blue-50 transition-colors text-left ${
-                                      selectedCountry?.code === country.code ? 'bg-blue-50' : ''
-                                    }`}
-                                  >
-                                    <img 
-                                      src={country.flag} 
-                                      alt={country.name}
-                                      className="w-6 h-4 object-cover rounded flex-shrink-0"
-                                    />
-                                    <span className="flex-1 text-gray-900 font-medium truncate">
-                                      {country.name}
-                                    </span>
-                                    <span className="text-gray-600 text-sm font-mono flex-shrink-0">
-                                      {country.dialCode}
-                                    </span>
-                                  </button>
-                                ))
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <input
-                        type="tel"
-                        value={applicationData.phone}
-                        onChange={handlePhoneChange}
-                        className="flex-1 px-4 py-2 ms-0.5 border border-gray-200 rounded-r-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-300 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-                        placeholder="98765 43210"
-                      />
-                    </div>
-                    {applicationData.phone && applicationData.phone.replace(/\D/g, '').length > 0 && applicationData.phone.replace(/\D/g, '').length < 7 && (
-                      <p className="text-red-500 text-sm mt-1">
-                        Phone number seems too short
-                      </p>
-                    )}
-                    {applicationData.phone && (
-                      <p className="text-gray-500 text-xs mt-1">
-                        Full number: {getFullPhoneNumber()}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  Resume/CV *
-                </label>
-
-                <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${fileError ? 'border-red-300 bg-red-50' :
-                  applicationData.resume ? 'border-green-300 bg-green-50' :
-                    'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
-                  }`}>
-                  {!applicationData.resume ? (
-                    <>
-                      <input
-                        type="file"
-                        id="resume"
-                        accept=".pdf,.doc,.docx"
-                        onChange={handleResumeChange}
-                        className="hidden"
-                      />
-                      <label htmlFor="resume" className="cursor-pointer">
-                        <Upload className={`w-12 h-12 mx-auto mb-4 ${fileError ? 'text-red-400' : 'text-gray-400'}`} />
-                        <p className="text-gray-900 font-semibold text-lg mb-2">Click to upload resume</p>
-                        <p className="text-gray-500">PDF, DOC, DOCX (Max 10MB)</p>
-                      </label>
-                    </>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-white border border-green-200 rounded-xl">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3 min-w-0 flex-1">
-                            <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
-                            <div className="text-left min-w-0">
-                              <p className="text-green-700 font-medium break-words">{applicationData.resume.name}</p>
-                              <p className="text-gray-500 text-sm">{formatFileSize(applicationData.resume.size)}</p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRemoveFile}
-                            className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors flex-shrink-0 ml-2"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-sm text-green-600">✓ File validated and ready to upload</p>
-                    </div>
-                  )}
-                </div>
-
-                {fileError && (
-                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-                    <p className="text-red-700 text-sm flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-                      {fileError}
-                    </p>
-                  </div>
-                )}
-
-                <div className="mt-3 text-xs text-gray-500">
-                  <p>• Supported formats: PDF, DOC, DOCX</p>
-                  <p>• Maximum file size: 10MB</p>
-                  <p>• File will be validated before upload</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  required
-                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
-                />
-                <label htmlFor="terms" className="text-sm text-gray-700 leading-relaxed">
-                  I agree to the <a href="#" className="text-blue-600 hover:underline font-medium">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline font-medium">Privacy Policy</a>
-                </label>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-                <button
-                  type="button"
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => {
                     setShowApplicationForm(false);
                     setFileError('');
@@ -844,32 +660,299 @@ const JobDetailPage = ({ jobId }) => {
                       phone: '',
                     });
                   }}
-                  className="flex-1 border-2 border-gray-300 text-gray-700 py-4 rounded-xl hover:bg-gray-50 transition-all font-semibold"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors flex-shrink-0"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isApplying || !applicationData.resume || fileError}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl hover:shadow-lg transition-all font-semibold flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isApplying ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" />
-                      <span>Submit Application</span>
-                    </>
-                  )}
-                </button>
+                  <X className="w-6 h-6 text-gray-500" />
+                </motion.button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <form onSubmit={handleJobApplication} className="space-y-6">
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={applicationData.email || user.email || ''}
+                      onChange={(e) => setApplicationData(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                      placeholder="your.email@example.com"
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <div className="flex">
+                        <div ref={dropdownRef} className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                            disabled={isLoadingCountries}
+                            className="flex items-center space-x-2 px-3 py-3 border border-r-0 border-gray-200 rounded-l-xl bg-gray-50 hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                          >
+                            {isLoadingCountries ? (
+                              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                            ) : selectedCountry ? (
+                              <>
+                                <img
+                                  src={selectedCountry.flag}
+                                  alt={selectedCountry.name}
+                                  className="w-6 h-4 object-cover rounded"
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                  {selectedCountry.dialCode}
+                                </span>
+                                <ChevronDown className="w-4 h-4 text-gray-500" />
+                              </>
+                            ) : (
+                              <span className="text-sm text-gray-500">Select</span>
+                            )}
+                          </button>
+
+                          <AnimatePresence>
+                            {showCountryDropdown && !isLoadingCountries && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 max-h-96 overflow-hidden flex flex-col"
+                              >
+                                <div className="p-3 border-b border-gray-100 sticky top-0 bg-white">
+                                  <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                      ref={searchInputRef}
+                                      type="text"
+                                      value={countrySearch}
+                                      onChange={(e) => setCountrySearch(e.target.value)}
+                                      placeholder="Search country..."
+                                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="overflow-y-auto">
+                                  {filteredCountries.length === 0 ? (
+                                    <div className="p-4 text-center text-gray-500">
+                                      No countries found
+                                    </div>
+                                  ) : (
+                                    filteredCountries.map((country) => (
+                                      <motion.button
+                                        key={country.code}
+                                        type="button"
+                                        onClick={() => handleCountrySelect(country)}
+                                        whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
+                                        className={`w-full flex items-center space-x-3 px-4 py-3 transition-colors text-left ${selectedCountry?.code === country.code ? 'bg-blue-50' : ''
+                                          }`}
+                                      >
+                                        <img
+                                          src={country.flag}
+                                          alt={country.name}
+                                          className="w-6 h-4 object-cover rounded flex-shrink-0"
+                                        />
+                                        <span className="flex-1 text-gray-900 font-medium truncate">
+                                          {country.name}
+                                        </span>
+                                        <span className="text-gray-600 text-sm font-mono flex-shrink-0">
+                                          {country.dialCode}
+                                        </span>
+                                      </motion.button>
+                                    ))
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        <input
+                          type="tel"
+                          value={applicationData.phone}
+                          onChange={handlePhoneChange}
+                          className="flex-1 px-4 py-2 ms-0.5 border border-gray-200 rounded-r-xl focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                          placeholder="98765 43210"
+                        />
+                      </div>
+                      {applicationData.phone && applicationData.phone.replace(/\D/g, '').length > 0 && applicationData.phone.replace(/\D/g, '').length < 7 && (
+                        <p className="text-red-500 text-sm mt-1">
+                          Phone number seems too short
+                        </p>
+                      )}
+                      {applicationData.phone && (
+                        <p className="text-gray-500 text-xs mt-1">
+                          Full number: {getFullPhoneNumber()}
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                </div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    Resume/CV *
+                  </label>
+
+                  <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${fileError ? 'border-red-300 bg-red-50' :
+                    applicationData.resume ? 'border-green-300 bg-green-50' :
+                      'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50'
+                    }`}>
+                    {!applicationData.resume ? (
+                      <>
+                        <input
+                          type="file"
+                          id="resume"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleResumeChange}
+                          className="hidden"
+                        />
+                        <label htmlFor="resume" className="cursor-pointer">
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Upload className={`w-12 h-12 mx-auto mb-4 ${fileError ? 'text-red-400' : 'text-gray-400'}`} />
+                          </motion.div>
+                          <p className="text-gray-900 font-semibold text-lg mb-2">Click to upload resume</p>
+                          <p className="text-gray-500">PDF, DOC, DOCX (Max 10MB)</p>
+                        </label>
+                      </>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="space-y-4"
+                      >
+                        <div className="p-4 bg-white border border-green-200 rounded-xl shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                              <CheckCircle className="w-6 h-6 text-green-500 flex-shrink-0" />
+                              <div className="text-left min-w-0">
+                                <p className="text-green-700 font-medium break-words">{applicationData.resume.name}</p>
+                                <p className="text-gray-500 text-sm">{formatFileSize(applicationData.resume.size)}</p>
+                              </div>
+                            </div>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              type="button"
+                              onClick={handleRemoveFile}
+                              className="p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors flex-shrink-0 ml-2"
+                            >
+                              <X className="w-4 h-4" />
+                            </motion.button>
+                          </div>
+                        </div>
+                        <p className="text-sm text-green-600 flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          File validated and ready to upload
+                        </p>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {fileError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl"
+                    >
+                      <p className="text-red-700 text-sm flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                        {fileError}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  <div className="mt-3 text-xs text-gray-500 space-y-1">
+                    <p>• Supported formats: PDF, DOC, DOCX</p>
+                    <p>• Maximum file size: 10MB</p>
+                    <p>• File will be validated before upload</p>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex items-start space-x-3"
+                >
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    required
+                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
+                  />
+                  <label htmlFor="terms" className="text-sm text-gray-700 leading-relaxed">
+                    I agree to the <a href="#" className="text-blue-600 hover:underline font-medium">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline font-medium">Privacy Policy</a>
+                  </label>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                    onClick={() => {
+                      setShowApplicationForm(false);
+                      setFileError('');
+                      setApplicationData({
+                        resume: null,
+                        email: '',
+                        phone: '',
+                      });
+                    }}
+                    className="flex-1 border-2 border-gray-300 text-gray-700 py-4 rounded-xl hover:bg-gray-50 transition-all font-semibold"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: isApplying || !applicationData.resume || fileError ? 1 : 1.02 }}
+                    whileTap={{ scale: isApplying || !applicationData.resume || fileError ? 1 : 0.98 }}
+                    type="submit"
+                    disabled={isApplying || !applicationData.resume || fileError}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all font-semibold flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isApplying ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5" />
+                        <span>Submit Application</span>
+                      </>
+                    )}
+                  </motion.button>
+                </motion.div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
